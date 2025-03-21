@@ -15,7 +15,7 @@ class Token(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, related_name='tokens', on_delete=models.CASCADE)
 
-    def is_expired():
+    def is_expired(self):
         return False
 
 class Queue(models.Model):
