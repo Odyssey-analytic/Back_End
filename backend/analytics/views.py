@@ -10,8 +10,9 @@ class CreateAccount(APIView):
         try:
             account_manager = RabbitAccountManager({"name": "amdor"})
             account_manager.create_account()
-            account_manager.add_queue("started_session", queue_type.SINGLE_VALUE)
-            #account_manager.remove_account()
+            queue_name = account_manager.add_queue("started_session", queue_type.SINGLE_VALUE)
+            account_manager.remove_queue(queue_name)
+            account_manager.remove_account()
             return Response("successful", status=status.HTTP_200_OK)
         except Exception as e:
             print(e)

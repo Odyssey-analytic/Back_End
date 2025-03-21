@@ -138,7 +138,21 @@ class RabbitAccountManager:
         else:
             print(f"Unexpected response while creating queue: {create_queue_response.status_code} - {create_queue_response.text}")
             raise ValueError("Unexpected response during queue creation")
-        
-    def remove_queue(self, type: queue_type):
-        pass
+            
+    def remove_queue(self, queue_name):
+        full_queue_name = f"{queue_name}"
 
+        delete_response = requests.delete(
+            f"{self.RABBITMQ_API_URL}/queues/{self.VHOST}/{full_queue_name}",
+            auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
+            timeout=10
+        )
+
+        if delete_response.status_code in [204, 200]:
+            print(f"Queue '{full_queue_name}' deleted successfully from vhost '{self.VHOST}'.")
+        elif delete_response.status_code == 404:
+            print(f"Queue '{full_queue_name}' not found in vhost '{self.VHOST}'. Nothing to delete.")
+            raise KeyError(f"Queue '{full_queue_name}' does not exist.")
+        else:
+            print(f"Unexpected response while deleting queue: {delete_response.status_code} - {delete_response.text}")
+            raise ValueError("Failed to delete queue")
