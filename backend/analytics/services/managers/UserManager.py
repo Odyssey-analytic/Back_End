@@ -1,4 +1,4 @@
-from ..queue_manager import RabbitAccountManager
+from .queue_manager import RabbitAccountManager
 from ..queue_type import queue_type
 from ...models import User, Token, Queue
 from ..Utilities import generate_secure_password

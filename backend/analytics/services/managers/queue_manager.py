@@ -1,7 +1,7 @@
-from .queue_type import queue_type
+from ..queue_type import queue_type
 import requests
 from requests.auth import HTTPBasicAuth
-from .Utilities import generate_secure_password
+from ..Utilities import generate_secure_password
 
 class RabbitAccountManager:
     def __init__(self, client):
