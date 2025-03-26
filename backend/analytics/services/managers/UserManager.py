@@ -54,9 +54,6 @@ class UserManager:
             q.save()
             queue_fullnames.append(fullname)
 
-        gkpi = GlobalKPIDaily.objects.create(token=token)
-        gkpi.save()
-
         return token
 
 

@@ -120,7 +120,7 @@ class RabbitAccountManager:
         queue_name = f"{username}.{VHOST}.{queue_name}.{queue_type.name}"  
 
         create_queue_response = requests.put(
-            f"{self.RABBITMQ_API_URL}/queues/{VHOST}/{queue_name}",
+            f"{self.RABBITMQ_API_URL}/queues/analytic/{queue_name}",
             auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
             json={
                 "durable": True

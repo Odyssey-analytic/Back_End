@@ -11,7 +11,7 @@ class User(models.Model):
 class Token(models.Model):
     name = models.CharField(max_length=max_name_length)
     value = models.CharField(max_length=max_name_length, unique=True)
-    VHOST_name = models.CharField(max_length=max_name_length, unique=True)
+    VHOST_name = models.CharField(max_length=max_name_length)
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(User, related_name='tokens', on_delete=models.CASCADE)
 
@@ -40,9 +40,10 @@ class KPIData(models.Model):
 
 class GlobalKPIDaily(models.Model):
     token = models.ForeignKey(Token, related_name='global_data', on_delete=models.CASCADE)
-    date = models.DateField(primary_key=True, auto_now_add=True)
+    date = models.DateField(auto_now_add=True)
     total_users = models.IntegerField(default=0)
     daily_active_users = models.IntegerField(default=0)
 
     class Meta: 
         unique_together = ('token', 'date')
+        get_latest_by = 'date'

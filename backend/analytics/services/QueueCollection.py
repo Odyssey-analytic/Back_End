@@ -1,6 +1,7 @@
 from ..models import Queue as db_queue
 from kombu import Consumer, Exchange, Connection
 from kombu import Queue as celery_queue 
+
 class QueueCollection:
     
     def __init__(self):
@@ -10,7 +11,7 @@ class QueueCollection:
             q_name = d_queue.fullname
             c_queue = celery_queue(name=q_name, exchange=Exchange(''), routing_key=q_name, durable=True)
             self.queues.append(c_queue)
-            print(f"Queue '{q_name}' declared in vhost '{vhost}'")
+            print(f"Queue '{q_name}' declared")
         
     def get_queues(self, predicate = None):
         result = []
