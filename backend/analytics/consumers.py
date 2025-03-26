@@ -1,19 +1,23 @@
 import asyncio
 from channels.generic.http import AsyncHttpConsumer
 from channels.layers import get_channel_layer
+import json
+import uuid
 
 class KPI_Monitor(AsyncHttpConsumer):
     async def handle(self, body):
-        self.channel_layer = get_channel_layer()
-        print(self.channel_layer)
         await self.send_headers(headers=[
             (b"Cache-Control", b"no-cache"),
             (b"Content-Type", b"text/event-stream"),
             (b"Transfer-Encoding", b"chunked"),
         ])
-        print("salam")
-        self.channel_name = "channel_test"
-        await self.channel_layer.group_add("sse_group", self.channel_name)
+        data = json.loads(body)
+        token_value = data['token']
+        kpi = data['kpi']
+        unique_id = uuid.uuid4().hex[:8]
+        self.channel_name = f"{token_value}.{kpi}.{unique_id}"
+        group = f"{token_value}.{kpi}"
+        await self.channel_layer.group_add(group, self.channel_name)
 
         try:
             while True:
