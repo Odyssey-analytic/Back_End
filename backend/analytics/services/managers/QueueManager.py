@@ -117,7 +117,7 @@ class RabbitAccountManager:
 
     def add_queue(self, VHOST, queue_name: str, queue_type: queue_type):
         username = self.client_name
-        queue_name = f"{username}.{queue_name}.{queue_type.name}"  
+        queue_name = f"{username}.{VHOST}.{queue_name}.{queue_type.name}"  
 
         create_queue_response = requests.put(
             f"{self.RABBITMQ_API_URL}/queues/{VHOST}/{queue_name}",
