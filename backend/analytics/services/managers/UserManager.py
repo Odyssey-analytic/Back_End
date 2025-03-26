@@ -1,6 +1,6 @@
-from ..queue_manager import RabbitAccountManager
+from .QueueManager import RabbitAccountManager
 from ..queue_type import queue_type
-from ...models import User, Token, Queue
+from ...models import User, Token, Queue, GlobalKPIDaily
 from ..Utilities import generate_secure_password
 class UserManager:
     
@@ -40,7 +40,7 @@ class UserManager:
             user=self.user
         )
         token.save()
-        
+
         queue_fullnames = []
         for queue in queues:
             fullname = self.account_manager.add_queue(token_vhost, queue["queue_name"], queue_type[queue["queue_type"]])

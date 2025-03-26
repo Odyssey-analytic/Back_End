@@ -1,7 +1,7 @@
-from .queue_type import queue_type
+from ..queue_type import queue_type
 import requests
 from requests.auth import HTTPBasicAuth
-from .Utilities import generate_secure_password
+from ..Utilities import generate_secure_password
 
 class RabbitAccountManager:
     def __init__(self, client):
@@ -117,10 +117,10 @@ class RabbitAccountManager:
 
     def add_queue(self, VHOST, queue_name: str, queue_type: queue_type):
         username = self.client_name
-        queue_name = f"{username}.{queue_name}.{queue_type.name}"  
+        queue_name = f"{username}.{VHOST}.{queue_name}.{queue_type.name}"  
 
         create_queue_response = requests.put(
-            f"{self.RABBITMQ_API_URL}/queues/{VHOST}/{queue_name}",
+            f"{self.RABBITMQ_API_URL}/queues/analytic/{queue_name}",
             auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
             json={
                 "durable": True
