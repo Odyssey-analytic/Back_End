@@ -14,11 +14,10 @@ class KPI_Monitor(AsyncHttpConsumer):
         data = json.loads(body)
         token_value = data['token']
         kpi = data['kpi']
-        unique_id = uuid.uuid4().hex[:8]
-        self.channel_name = f"{token_value}.{kpi}.{unique_id}"
         group = f"{token_value}.{kpi}"
+        print(group)
         await self.channel_layer.group_add(group, self.channel_name)
-
+        print(self.channel_layer)
         try:
             while True:
                 await asyncio.sleep(15)
@@ -28,4 +27,5 @@ class KPI_Monitor(AsyncHttpConsumer):
 
     async def send_sse_message(self, event):
         message = event["text"]
+        print(event)
         await self.send_body(f"data: {message}\n\n".encode(), more_body=True)

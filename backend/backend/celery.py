@@ -1,23 +1,30 @@
-import os
-from celery import bootsteps
-from kombu import Consumer, Exchange, Queue
-from celery import Celery
-import json
+import os, sys, django, json
+from celery import bootsteps, Celery
+from kombu import Consumer
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
-import django
 django.setup()
-from analytics.models import Queue as db_queue
+
 from analytics.models import Token, GlobalKPIDaily
 from analytics.services.QueueCollection import QueueCollection
-app = Celery('backend')
+from analytics.services.Utilities import send_update_to_group
+
+app = Celery('celery')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-app.autodiscover_tasks()
+def is_running_under_celery():
+    return 'celery' in sys.argv[0] or any('celery' in arg for arg in sys.argv)
 
-queue_collection = QueueCollection()
-queues = queue_collection.queues
-print(queue_collection.queues)
+def is_running_under_uvicorn():
+    return 'uvicorn' in sys.argv[0] or any('uvicorn' in arg for arg in sys.argv)
+
+
+app.autodiscover_tasks()
+if is_running_under_celery():
+    queue_collection = QueueCollection()
+    queues = queue_collection.queues
+    print(queue_collection.queues)
 
 def get_queue_name(fullname):
     return fullname.split('.')[2]
@@ -38,6 +45,9 @@ class StartSessionEvent(bootsteps.ConsumerStep):
             token_value = data['token']
             cid = data['cid']
             token = Token.objects.get(value=token_value)
+            group_name = f"{token.value}.current_active_users"
+            print(group_name)
+            send_update_to_group(f"1", group_name)
             kpi_qs = GlobalKPIDaily.objects.filter(token=token)
             if kpi_qs.exists():
                 latest_kpi = kpi_qs.latest('date')
