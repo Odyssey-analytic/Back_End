@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, NotFound
 from .services.managers.UserManager import UserManager
-from .models import Token
+from .models import Token, Queue
 import json
 import random
 
@@ -38,11 +38,17 @@ class TokenView(APIView):
                 raise AuthenticationFailed('Token has expired.')
 
             user = token_obj.user
+
+            queues = Queue.objects.filter(token=token_obj)
+
+            # Prepare the list of queues with fullname and name properties
+            queue_data = [{"fullname": queue.fullname, "name": queue.name} for queue in queues]
+
             return Response({
                 "rb_username": user.rb_username,
                 "rb_password": user.rb_password,
-                "vhost_name": token_obj.VHOST_name,
-                "id": random.randint(0, 100000)
+                "queues": queue_data,
+                "cid": random.randint(0, 100000)
                 })
         except Exception as e:
             print(e)
