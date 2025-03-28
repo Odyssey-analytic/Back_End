@@ -5,6 +5,7 @@ from asgiref.sync import sync_to_async
 from analytics.models import GlobalKPIDaily, Token
 import json
 from urllib.parse import parse_qs
+from datetime import datetime
 import uuid
 
 class KPI_Monitor(AsyncHttpConsumer):
@@ -36,8 +37,12 @@ class KPI_Monitor(AsyncHttpConsumer):
                 await asyncio.sleep(10)
                 kpi = await sync_to_async(GlobalKPIDaily.objects.get)(token=token_obj)
                 #print(kpi)
+                payload = {
+                    "data": current_value,
+                    "date": datetime.time()
+                }
                 current_value = kpi.daily_active_users
-                await self.send_sse_message({"text": json.dumps(current_value)})
+                await self.send_sse_message({"test": json.dumps(payload)})
                 
                 # if prev_value == current_value:
                 #     continue
