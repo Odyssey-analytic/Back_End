@@ -54,7 +54,7 @@ class StartSessionEvent(bootsteps.ConsumerStep):
                 print(f"daily active users: {latest_kpi.daily_active_users}")
             else:
                 print(f"No KPI data found for token: {token_value} Initializing one")
-                latest_kpi = GlobalKPIDaily.objects.create(token=token, daily_active_users=1)
+                latest_kpi = GlobalKPIDaily.objects.create(token=token, daily_active_users=0)
             latest_kpi.daily_active_users += 1
             latest_kpi.save()
             print(f"daily active users: {latest_kpi.daily_active_users}")
