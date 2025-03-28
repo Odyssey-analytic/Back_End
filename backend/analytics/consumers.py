@@ -25,17 +25,19 @@ class KPI_Monitor(AsyncHttpConsumer):
         try:
             prev_value = None
             while True:
-                await asyncio.sleep(1)
+                await asyncio.sleep(10)
                 kpi = await sync_to_async(GlobalKPIDaily.objects.get)(token=token_obj)
                 #print(kpi)
                 current_value = kpi.daily_active_users
-                if prev_value == current_value:
-                    continue
-                else:
-                    if(current_value == "null"):
-                        current_value = 0
-                    prev_value = current_value
-                    await self.send_sse_message({"text": json.dumps(current_value)})
+                await self.send_sse_message({"text": json.dumps(current_value)})
+                
+                # if prev_value == current_value:
+                #     continue
+                # else:
+                #     if(current_value == "null"):
+                #         current_value = 0
+                #     prev_value = current_value
+                #     await self.send_sse_message({"text": json.dumps(current_value)})
         except asyncio.CancelledError:
             await self.channel_layer.group_discard("sse_group", self.channel_name)
 
