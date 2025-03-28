@@ -47,7 +47,7 @@ class StartSessionEvent(bootsteps.ConsumerStep):
             token = Token.objects.get(value=token_value)
             group_name = f"{token.value}.current_active_users"
             print(group_name)
-            send_update_to_group(f"1", group_name)
+            #send_update_to_group(f"1", group_name)
             kpi_qs = GlobalKPIDaily.objects.filter(token=token)
             if kpi_qs.exists():
                 latest_kpi = kpi_qs.latest('date')
