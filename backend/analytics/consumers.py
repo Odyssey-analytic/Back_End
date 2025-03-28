@@ -19,7 +19,7 @@ class KPI_Monitor(AsyncHttpConsumer):
         kpi = query.get("kpi", [None])[0]
         group = f"{token_value}.{kpi}"
 
-        if not token_value or not kpi_type:
+        if not token_value or not kpi:
             await self.send_body(b"data: Invalid request\n\n", more_body=False)
             return
         
