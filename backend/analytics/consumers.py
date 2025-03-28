@@ -1,6 +1,8 @@
 import asyncio
 from channels.generic.http import AsyncHttpConsumer
 from channels.layers import get_channel_layer
+from asgiref.sync import sync_to_async
+from analytics.models import GlobalKPIDaily, Token
 import json
 import uuid
 
@@ -18,10 +20,22 @@ class KPI_Monitor(AsyncHttpConsumer):
         print(group)
         await self.channel_layer.group_add(group, self.channel_name)
         print(self.channel_layer)
+        token_obj = await sync_to_async(Token.objects.get)(value=token_value)
+        kpi = await sync_to_async(GlobalKPIDaily.objects.get)(token=token_obj)
         try:
+            prev_value = None
             while True:
-                await asyncio.sleep(15)
-                await self.send_body(b": keepalive\n\n", more_body=True)
+                await asyncio.sleep(1)
+                kpi = await sync_to_async(GlobalKPIDaily.objects.get)(token=token_obj)
+                #print(kpi)
+                current_value = kpi.daily_active_users
+                if prev_value == current_value:
+                    continue
+                else:
+                    if(current_value == "null"):
+                        current_value = 0
+                    prev_value = current_value
+                    await self.send_sse_message({"text": json.dumps(current_value)})
         except asyncio.CancelledError:
             await self.channel_layer.group_discard("sse_group", self.channel_name)
 

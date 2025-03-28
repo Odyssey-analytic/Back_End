@@ -9,7 +9,7 @@ from analytics.models import Token, GlobalKPIDaily
 from analytics.services.QueueCollection import QueueCollection
 from analytics.services.Utilities import send_update_to_group
 
-app = Celery('celery')
+app = Celery('backend')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
