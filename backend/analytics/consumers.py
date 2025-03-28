@@ -13,6 +13,8 @@ class KPI_Monitor(AsyncHttpConsumer):
             (b"Cache-Control", b"no-cache"),
             (b"Content-Type", b"text/event-stream"),
             (b"Transfer-Encoding", b"chunked"),
+            (b'Access-Control-Allow-Origin', b'http://localhost:5173'),
+            (b'Access-Control-Allow-Credentials', b'true')
         ])
         query = parse_qs(self.scope["query_string"].decode())
         token_value = query.get("token", [None])[0]
