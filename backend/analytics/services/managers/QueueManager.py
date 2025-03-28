@@ -95,7 +95,20 @@ class RabbitAccountManager:
             else:
                 print(f"Unexpected response: {create_response.status_code} - {create_response.text}")
                 raise ValueError("Unexpected response")
-     
+
+            set_permissions = requests.put(
+                f"{self.RABBITMQ_API_URL}/permissions/analytic/{username}",
+                auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
+                json={
+                    "configure": "",
+                    "write": ".*",
+                    "read": ""
+                },
+                timeout=10
+            )
+
+
+
             return (username, password)
             
     def remove_account(self):
