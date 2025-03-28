@@ -4,6 +4,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import sync_to_async
 from analytics.models import GlobalKPIDaily, Token
 import json
+from urllib.parse import parse_qs
 import uuid
 
 class KPI_Monitor(AsyncHttpConsumer):
@@ -13,10 +14,15 @@ class KPI_Monitor(AsyncHttpConsumer):
             (b"Content-Type", b"text/event-stream"),
             (b"Transfer-Encoding", b"chunked"),
         ])
-        data = json.loads(body)
-        token_value = data['token']
-        kpi = data['kpi']
+        query = parse_qs(self.scope["query_string"].decode())
+        token_value = query.get("token", [None])[0]
+        kpi = query.get("kpi", [None])[0]
         group = f"{token_value}.{kpi}"
+
+        if not token_value or not kpi_type:
+            await self.send_body(b"data: Invalid request\n\n", more_body=False)
+            return
+        
         print(group)
         await self.channel_layer.group_add(group, self.channel_name)
         print(self.channel_layer)
