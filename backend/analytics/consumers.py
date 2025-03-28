@@ -37,9 +37,11 @@ class KPI_Monitor(AsyncHttpConsumer):
                 await asyncio.sleep(10)
                 kpi = await sync_to_async(GlobalKPIDaily.objects.get)(token=token_obj)
                 #print(kpi)
+                now_utc = datetime.now(timezone.utc)
+                formatted = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
                 payload = {
-                    "data": current_value,
-                    "date": datetime.time()
+                    "timestamp": formatted,
+                    "value": current_value
                 }
                 current_value = kpi.daily_active_users
                 await self.send_sse_message({"test": json.dumps(payload)})
