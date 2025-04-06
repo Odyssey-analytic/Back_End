@@ -9,7 +9,7 @@ from analytics.models import Token, GlobalKPIDaily
 from analytics.services.QueueCollection import QueueCollection
 from analytics.services.Utilities import send_update_to_group
 
-app = Celery('celery')
+app = Celery('backend')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
@@ -47,14 +47,14 @@ class StartSessionEvent(bootsteps.ConsumerStep):
             token = Token.objects.get(value=token_value)
             group_name = f"{token.value}.current_active_users"
             print(group_name)
-            send_update_to_group(f"1", group_name)
+            #send_update_to_group(f"1", group_name)
             kpi_qs = GlobalKPIDaily.objects.filter(token=token)
             if kpi_qs.exists():
                 latest_kpi = kpi_qs.latest('date')
                 print(f"daily active users: {latest_kpi.daily_active_users}")
             else:
                 print(f"No KPI data found for token: {token_value} Initializing one")
-                latest_kpi = GlobalKPIDaily.objects.create(token=token, daily_active_users=1)
+                latest_kpi = GlobalKPIDaily.objects.create(token=token, daily_active_users=0)
             latest_kpi.daily_active_users += 1
             latest_kpi.save()
             print(f"daily active users: {latest_kpi.daily_active_users}")
