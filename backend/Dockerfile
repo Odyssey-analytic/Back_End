@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD ["uvicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000"]
+CMD ["uvicorn", "backend.asgi:application", "--host", "0.0.0.0" , "--port" , "8000" ]
