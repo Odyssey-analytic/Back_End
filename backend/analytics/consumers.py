@@ -18,6 +18,7 @@ class KPI_Monitor(AsyncHttpConsumer):
         print(group)
         await self.channel_layer.group_add(group, self.channel_name)
         print(self.channel_layer)
+        
         try:
             while True:
                 await asyncio.sleep(15)
