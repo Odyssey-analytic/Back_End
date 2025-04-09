@@ -1,7 +1,7 @@
 from ..queue_type import queue_type
 import requests
 from requests.auth import HTTPBasicAuth
-from ..Utilities import generate_secure_password
+from ..Utilities import generate_secure_password, secure_hash_base64
 
 class RabbitAccountManager:
     def __init__(self, client):
@@ -95,7 +95,20 @@ class RabbitAccountManager:
             else:
                 print(f"Unexpected response: {create_response.status_code} - {create_response.text}")
                 raise ValueError("Unexpected response")
-     
+
+            set_permissions = requests.put(
+                f"{self.RABBITMQ_API_URL}/permissions/analytic/{username}",
+                auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
+                json={
+                    "configure": "",
+                    "write": ".*",
+                    "read": ""
+                },
+                timeout=10
+            )
+
+
+
             return (username, password)
             
     def remove_account(self):
@@ -118,6 +131,7 @@ class RabbitAccountManager:
     def add_queue(self, VHOST, queue_name: str, queue_type: queue_type):
         username = self.client_name
         queue_name = f"{username}.{VHOST}.{queue_name}.{queue_type.name}"  
+        #queue_name = secure_hash_base64(queue_name)
 
         create_queue_response = requests.put(
             f"{self.RABBITMQ_API_URL}/queues/analytic/{queue_name}",

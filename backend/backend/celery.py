@@ -7,6 +7,7 @@ django.setup()
 
 app = Celery('celery')
 
+
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
 def is_running_under_celery():
@@ -17,7 +18,6 @@ def is_running_under_uvicorn():
 
 
 app.autodiscover_tasks()
-
 
 if is_running_under_celery():
     import analytics.celery_consumers  #
