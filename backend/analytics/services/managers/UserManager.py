@@ -1,6 +1,6 @@
 from .QueueManager import RabbitAccountManager
 from ..queue_type import queue_type
-from ...models import User, Token, Queue, GlobalKPIDaily
+from ...models import User, Token, Queue
 from ..Utilities import generate_secure_password
 class UserManager:
     
