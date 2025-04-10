@@ -1,7 +1,11 @@
 from django.db import models
+from django.contrib.auth.models import AbstractUser
 
 
 max_name_length = 300
+
+class CustomUser(AbstractUser):
+    email = models.EmailField(unique=True)
 
 class User(models.Model):
     name = models.CharField(max_length=max_name_length)
