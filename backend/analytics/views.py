@@ -3,11 +3,99 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, NotFound
 from .services.managers.UserManager import UserManager
-from .models import Token, Queue
+from .models import Token, Queue, CustomUser
 import json
 import random
+import jwt
+from .serializers import CustomUserSignUpSerializer, LoginSerializer
+from datetime import datetime, timedelta, timezone
+from django.core.mail import send_mail
+from django.conf import settings
+
 
 # Create your views here.
+class PasswordResetConfirmView(APIView):
+    def post(self, request, token):
+        sec_key = settings.SECRET_KEY
+        # Decode the token
+        try:
+            payload = jwt.decode(token, sec_key, algorithms=['HS256'])
+            user_id = payload['user_id']
+            user = CustomUser.objects.get(id=user_id)
+        except jwt.ExpiredSignatureError:
+            return Response({'error': 'Token has expired.'}, status=status.HTTP_400_BAD_REQUEST)
+        except jwt.InvalidTokenError:
+            return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Validate the new password and confirmation
+        new_password = request.data.get('new_password')
+        confirm_password = request.data.get('confirm_password')
+        
+        if not new_password or not confirm_password:
+            return Response({'error': 'Both password fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if new_password != confirm_password:
+            return Response({'error': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update the user's password
+        user.set_password(new_password)
+        user.save()
+        
+        return Response({'message': 'Password reset successfully.'}, status=status.HTTP_200_OK)
+
+class PasswordResetRequestView(APIView):
+    def post(self, request):
+        sec_key = settings.SECRET_KEY
+        email = request.data.get('email')
+        try:
+            user = CustomUser.objects.get(email=email)
+            
+            # Generate a JWT token for password reset
+            payload = {
+                'user_id': user.id,
+                'exp': datetime.now(timezone.utc) + timedelta(hours=1),  # Expires in 1 hour
+                'iat': datetime.now(timezone.utc)
+            }
+            token = jwt.encode(payload, sec_key, algorithm='HS256')
+            
+            # Generate a reset link (adjust the URL for your frontend)
+            reset_link = f"http://odysseyanalytics.ir/api/reset-password/{token}"
+            
+            # Send reset link via email
+            send_mail(
+                'Password Reset Request',
+                f'Click the link to reset your password: {reset_link}',
+                'oddysey.analytics@gmail.com',
+                [email],
+            )
+            
+            return Response({'message': 'Password reset link sent.'}, status=200)
+        except CustomUser.DoesNotExist:
+            return Response({'error': 'User not found.'}, status=404)
+
+class CustomUserSignUpView(APIView):
+
+    serializer_class = CustomUserSignUpSerializer
+
+    def post(self, request):
+        serializer = CustomUserSignUpSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class LoginView(APIView):
+
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 class UserView(APIView):
     def post(self, request):
         try:
@@ -66,5 +154,3 @@ class TokenView(APIView):
         except Exception as e:
             print(e)
             return Response(f"error: {e}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
