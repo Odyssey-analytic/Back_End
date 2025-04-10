@@ -29,8 +29,6 @@ class KPI_Monitor(AsyncHttpConsumer):
         print(group)
         await self.channel_layer.group_add(group, self.channel_name)
         print(self.channel_layer)
-        token_obj = await sync_to_async(Token.objects.get)(value=token_value)
-        kpi = await sync_to_async(GlobalKPIDaily.objects.get)(token=token_obj)
         try:
             prev_value = None
             while True:
