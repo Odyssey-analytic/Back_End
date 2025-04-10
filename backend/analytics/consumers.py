@@ -2,7 +2,7 @@ import asyncio
 from channels.generic.http import AsyncHttpConsumer
 from channels.layers import get_channel_layer
 from asgiref.sync import sync_to_async
-from analytics.models import GlobalKPIDaily, Token
+from analytics.models import Token
 import json
 from urllib.parse import parse_qs
 from datetime import datetime,timezone

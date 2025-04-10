@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, CustomUserو GameEvent, SessionStartEvent, SessionEndEvent, Session, Client
+from .models import User, CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Client
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import authenticate

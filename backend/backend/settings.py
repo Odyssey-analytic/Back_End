@@ -22,15 +22,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(_=$cjl9=k%*zfgw*)*sny!-tn21##39fphwgtsr+o%gd&$+(k'
+load_dotenv()  # Load environment variables from .env file
+DEBUG = os.getenv("DEBUG")
+if DEBUG == "True":
+    SECRET_KEY = 'django-insecure-(_=$cjl9=k%*zfgw*)*sny!-tn21##39fphwgtsr+o%gd&$+(k'
+else:
+    SECRET_KEY = os.getenv('SECRET_KEY') 
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['*']
-
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = ['*'] # change this
 
 # Application definition
 
@@ -84,13 +87,30 @@ ASGI_APPLICATION = "backend.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG:
+    DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': 'postgres',         
+                'USER': 'postgres',       
+                'PASSWORD': 'admin', 
+                'HOST': 'localhost',           
+                'PORT': '5432',                 
+            }
+        }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'OAnalyticsDB',         
+            'USER': 'OdysseyAnalytics',       
+            'PASSWORD': 'OdysseyHospital', 
+            'HOST': 'localhost',            
+            'PORT': '5432',                
+        }
     }
-}
+
+
 
 
 # Password validation
@@ -159,11 +179,18 @@ CHANNEL_LAYERS = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:8000",
-    "http://localhost:3000"
-]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://localhost:3000"
+    ]
+else:
+    CORS_ALLOWED_ORIGINS = [        # change this
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://localhost:3000"
+    ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -185,5 +212,3 @@ EMAIL_HOST_USER = 'oddysey.analytics@gmail.com'
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_PASS')
 
 
-load_dotenv()  # Load environment variables from .env file
-SECRET_KEY = os.getenv('SECRET_KEY')  # Use a fallback key for development
