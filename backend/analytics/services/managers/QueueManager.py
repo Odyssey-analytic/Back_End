@@ -2,6 +2,7 @@ from ..queue_type import queue_type
 import requests
 from requests.auth import HTTPBasicAuth
 from ..Utilities import generate_secure_password, secure_hash_base64
+from backend.celery import add_queue, delete_queue
 
 class RabbitAccountManager:
     def __init__(self, client):
@@ -9,7 +10,7 @@ class RabbitAccountManager:
         self.RABBITMQ_API_URL = "http://localhost:15672/api"
         self.ADMIN_USER = "guest"
         self.ADMIN_PASS = "guest"
-        self.tags = "management"
+        self.tags = ["management"]
         self.passowrdlength = 64 
 
     def account_exist(self, username):
@@ -82,11 +83,11 @@ class RabbitAccountManager:
                 auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
                 json={
                     "password": password,
-                    "tags": self.tags
+                    "tags": ["management"]
                 },
                 timeout=10
             )
-
+            print(repr(create_response._content))
             if create_response.status_code == 201:
                 print(f"User '{username}' created successfully.")
             elif create_response.status_code == 400:
@@ -144,6 +145,8 @@ class RabbitAccountManager:
 
         if create_queue_response.status_code == 201 or create_queue_response.status_code == 204:
             print(f"Queue '{queue_name}' created successfully.")
+            print("firing add queue task")
+            add_queue.delay(queue_name)
             return queue_name
         elif create_queue_response.status_code == 400:
             print(f"Bad request while creating queue: {create_queue_response.text}")
@@ -163,6 +166,8 @@ class RabbitAccountManager:
 
         if delete_response.status_code in [204, 200]:
             print(f"Queue '{full_queue_name}' deleted successfully from vhost '{VHOST}'.")
+            print("firing delete queue task")
+            delete_queue.delay(queue_name)
         elif delete_response.status_code == 404:
             print(f"Queue '{full_queue_name}' not found in vhost '{VHOST}'. Nothing to delete.")
             raise KeyError(f"Queue '{full_queue_name}' does not exist.")

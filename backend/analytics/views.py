@@ -100,7 +100,7 @@ class UserView(APIView):
     def post(self, request):
         try:
             data = json.loads(request.body)
-
+            
             manager = UserManager()
             user = manager.create_user(data["name"])
 

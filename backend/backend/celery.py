@@ -1,6 +1,7 @@
 import os, sys, django
 from celery import Celery, bootsteps
 import inspect
+from celery import shared_task
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
@@ -35,3 +36,17 @@ if is_running_under_celery():
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
     print(f'Request: {self.request!r}')
+
+@shared_task
+def add_queue(queue_name):
+    print(f"Adding queue {queue_name}")
+    app.control.add_consumer(queue_name, reply=True)
+    print(f"Added queue {queue_name}")
+
+
+@shared_task
+def delete_queue(queue_name):
+    print(f"deleting queue {queue_name}")
+    app.control.cancel_consumer(queue_name, reply=True)
+    print(f"deleted queue {queue_name}")
+    
