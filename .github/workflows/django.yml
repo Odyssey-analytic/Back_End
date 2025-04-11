@@ -41,7 +41,6 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: 22  # Change if your SSH is on a custom port
         script: |
-          pwd
-          cd ./OdysseyAnalytic  # Optional, if your script depends on a location
-          ls -a
+          cd ./OdysseyAnalytic
+          dos2unix backendDeploy.sh
           ./backend_deploy.sh
