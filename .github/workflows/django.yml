@@ -43,4 +43,4 @@ jobs:
         script: |
           cd ./OdysseyAnalytic
           dos2unix backendDeploy.sh
-          ./backend_deploy.sh
+          ./backendDeploy.sh
