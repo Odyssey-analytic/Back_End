@@ -3,7 +3,7 @@ from celery import bootsteps
 from kombu import Consumer, Exchange, Queue
 import sys, json
 
-from analytics.models import Token, Client
+from analytics.models import Token, Client, Session
 from analytics.serializers import SessionStartEventSerializer, SessionEndEventSerializer
 from analytics.services.QueueCollection import QueueCollection
 from analytics.services.Utilities import send_update_to_group
@@ -38,14 +38,39 @@ class StartSessionEvent(bootsteps.ConsumerStep):
             print(f'Received Start Session message: {body}')
             data = json.loads(body)
 
+            session_id = data.get('session')
+            if not session_id:
+                print("Session ID not provided in message.")
+                message.ack()
+                return
+
+            client_obj = Client.objects.get(id=data["client"])
+            token_obj = client_obj.token
+
+
+            session_obj = Session.objects.create(
+                id=session_id,
+                token=token_obj,
+                client=client_obj,
+                platform=data["platform"],
+            )
+
+            print(f"Session created with ID: {session_obj.id}")
+
+
+            data['session'] = session_obj.id
+
             serializer = SessionStartEventSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
+                print(f"Start Session Event: {body} digested")
+            else:
+                print("serializer is not valid")
+                print(serializer.errors)
 
-            print(f"Start Session Event: {body} digested")
             message.ack()
         except Exception as e:
-            print(f"error occured for message {body}: {e}")
+            print(f"error occurred for message {body}: {e}")
 
 class EndSessionEvent(bootsteps.ConsumerStep):
     name = 'EndSessionEvent'
