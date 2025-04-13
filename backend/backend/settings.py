@@ -34,7 +34,7 @@ else:
 
 if DEBUG:
     POSTGRES_URL="localhost"
-    RABBITMQ_MANAGEMENT_URL="localhost:15672"
+    RABBITMQ_URL="localhost:15672"
     FRONTEND_URL="localhost:5173"
 else:
     POSTGRES_URL=os.getenv("POSTGRES_URL")
@@ -47,8 +47,8 @@ if DEBUG:
 else:
     ALLOWED_HOSTS = [
         POSTGRES_URL,
-                     RABBITMQ_MANAGEMENT_URL,
-                     FRONTEND_URL
+        RABBITMQ_URL,
+        FRONTEND_URL
         ]
 
 INSTALLED_APPS = [
