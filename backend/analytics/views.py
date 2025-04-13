@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, NotFound
 from .services.managers.UserManager import UserManager
-from .models import Token, Queue, CustomUser
+from .models import Token, Queue, CustomUser, Client
 import json
 import random
 import jwt
@@ -128,22 +128,30 @@ class TokenView(APIView):
                 raise AuthenticationFailed('Token has expired.')
 
             user = token_obj.user
-
             queues = Queue.objects.filter(token=token_obj)
 
-            # Prepare the list of queues with fullname and name properties
             queue_data = [{"fullname": queue.fullname, "name": queue.name} for queue in queues]
+
+            max_attempts = 10
+            for _ in range(max_attempts):
+                random_id = random.randint(1, 100000)
+                if not Client.objects.filter(id=random_id).exists():
+                    break
+            else:
+                return Response({"error": "Could not generate a unique client ID."}, status=500)
+
+            client = Client.objects.create(id=random_id, token=token_obj)
 
             return Response({
                 "rb_username": user.rb_username,
                 "rb_password": user.rb_password,
                 "queues": queue_data,
-                "cid": random.randint(0, 100000)
-                })
+                "cid": client.id
+            })
+
         except Exception as e:
             print(e)
             return Response(f"error: {e}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
     def post(self, request):
         try:
