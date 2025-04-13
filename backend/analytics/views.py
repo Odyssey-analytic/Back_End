@@ -62,7 +62,7 @@ class PasswordResetRequestView(APIView):
             token = jwt.encode(payload, sec_key, algorithm='HS256')
             
             # Generate a reset link (adjust the URL for your frontend)
-            reset_link = f"http://odysseyanalytics.ir/api/api/reset-password/{token}"
+            reset_link = f"http://odysseyanalytics.ir/reset-password/{token}"
             
             # Send reset link via email
             send_mail(
