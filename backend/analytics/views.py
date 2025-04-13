@@ -98,7 +98,9 @@ class LoginView(APIView):
 
 class UserView(APIView):
     def post(self, request):
+        print(f"Fuck YOU {request.body}")
         try:
+            
             data = json.loads(request.body)
             
             manager = UserManager()

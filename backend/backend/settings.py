@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 # SECURITY WARNING: keep the secret key used in production secret!
 load_dotenv()  # Load environment variables from .env file
-DEBUG = os.getenv("DEBUG") == True
+DEBUG = os.getenv("DEBUG") == "True"
 if DEBUG:
     SECRET_KEY = 'django-insecure-(_=$cjl9=k%*zfgw*)*sny!-tn21##39fphwgtsr+o%gd&$+(k'
 else:
@@ -41,15 +41,14 @@ else:
     RABBITMQ_URL=os.getenv("RABBITMQ_URL")
     FRONTEND_URL=os.getenv("FRONTEND_URL")
 
+print(POSTGRES_URL)
+print(RABBITMQ_URL)
+print(FRONTEND_URL)
 
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = [
-        POSTGRES_URL,
-        RABBITMQ_URL,
-        FRONTEND_URL
-        ]
+    ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'corsheaders',
@@ -104,9 +103,9 @@ ASGI_APPLICATION = "backend.asgi.application"
 DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'postgres',         
-            'USER': 'postgres',       
-            'PASSWORD': 'admin', 
+            'NAME': 'OAnalyticsDB',         
+            'USER': 'OdysseyAnalytics',       
+            'PASSWORD': 'OdysseyHospital', 
             'HOST': f'{POSTGRES_URL}',           
             'PORT': '5432',                 
         }
@@ -190,7 +189,8 @@ if DEBUG:
     ]
 else:
     CORS_ALLOWED_ORIGINS = [        # change this
-        FRONTEND_URL
+        f"https://{FRONTEND_URL}:443",
+	f"https://{RABBITMQ_URL}:15672"
     ]
 
 REST_FRAMEWORK = {
