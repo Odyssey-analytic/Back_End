@@ -24,8 +24,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 # SECURITY WARNING: keep the secret key used in production secret!
 load_dotenv()  # Load environment variables from .env file
-DEBUG = os.getenv("DEBUG")
-if DEBUG == "True":
+DEBUG = os.getenv("DEBUG") == True
+if DEBUG:
     SECRET_KEY = 'django-insecure-(_=$cjl9=k%*zfgw*)*sny!-tn21##39fphwgtsr+o%gd&$+(k'
 else:
     SECRET_KEY = os.getenv('SECRET_KEY') 
@@ -34,7 +34,7 @@ else:
 
 if DEBUG:
     POSTGRES_URL="localhost"
-    RABBITMQ_URL="localhost:15672"
+    RABBITMQ_URL="localhost"
     FRONTEND_URL="localhost:5173"
 else:
     POSTGRES_URL=os.getenv("POSTGRES_URL")
