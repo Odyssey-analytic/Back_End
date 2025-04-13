@@ -38,7 +38,7 @@ class Client(models.Model):
 class Session(models.Model):
     client = models.ForeignKey("Client", related_name="sessions", on_delete=models.CASCADE)
     token = models.ForeignKey("Token", related_name="sessions", on_delete=models.CASCADE)
-    start_time = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField()
     end_time = models.DateTimeField(null=True)
     platform = models.TextField(max_length=100)
     duration = models.DurationField(editable=False, null=True)
@@ -64,7 +64,7 @@ class GameEvent(models.Model):
 # Events
 
 class SessionStartEvent(GameEvent):
-    platform = models.TextField(max_length=100)
+    platform = models.TextField(max_length=100, null=False)
     
 
 class SessionEndEvent(GameEvent):

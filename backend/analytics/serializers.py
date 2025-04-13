@@ -79,7 +79,7 @@ class GameEventSerializer(serializers.ModelSerializer):
 class SessionStartEventSerializer(GameEventSerializer):
     class Meta(GameEventSerializer.Meta):
         model = SessionStartEvent
-        fields = GameEventSerializer.Meta.fields + ['time', 'platform']
+        fields = GameEventSerializer.Meta.fields + ['platform']
         
 
 class SessionEndEventSerializer(GameEventSerializer):
