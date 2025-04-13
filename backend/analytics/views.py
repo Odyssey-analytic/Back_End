@@ -48,9 +48,9 @@ class PasswordResetConfirmView(APIView):
 
 class PasswordResetRequestView(APIView):
     def post(self, request):
-        sec_key = settings.SECRET_KEY
-        email = request.data.get('email')
         try:
+            sec_key = settings.SECRET_KEY
+            email = request.data.get('email')
             user = CustomUser.objects.get(email=email)
             
             # Generate a JWT token for password reset
