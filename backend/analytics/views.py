@@ -28,7 +28,8 @@ class PasswordResetConfirmView(APIView):
             return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
         except CustomUser.DoesNotExist:
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
-        
+        except Exception as e:
+            return Response({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         # Validate the new password and confirmation
         new_password = request.data.get('new_password')
         confirm_password = request.data.get('confirm_password')
@@ -47,9 +48,9 @@ class PasswordResetConfirmView(APIView):
 
 class PasswordResetRequestView(APIView):
     def post(self, request):
-        sec_key = settings.SECRET_KEY
-        email = request.data.get('email')
         try:
+            sec_key = settings.SECRET_KEY
+            email = request.data.get('email')
             user = CustomUser.objects.get(email=email)
             
             # Generate a JWT token for password reset
@@ -70,10 +71,15 @@ class PasswordResetRequestView(APIView):
                 'oddysey.analytics@gmail.com',
                 [email],
             )
-            
+            print("Password reset link sent.")
             return Response({'message': 'Password reset link sent.'}, status=200)
         except CustomUser.DoesNotExist:
+            print(e)
             return Response({'error': 'User not found.'}, status=404)
+        except Exception as e:
+            print(e)
+            return Response({'error': e}, status=500)
+
 
 class CustomUserSignUpView(APIView):
 
