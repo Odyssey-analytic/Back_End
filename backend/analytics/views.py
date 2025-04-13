@@ -71,11 +71,13 @@ class PasswordResetRequestView(APIView):
                 'oddysey.analytics@gmail.com',
                 [email],
             )
-            
+            print("Password reset link sent.")
             return Response({'message': 'Password reset link sent.'}, status=200)
         except CustomUser.DoesNotExist:
+            print(e)
             return Response({'error': 'User not found.'}, status=404)
         except Exception as e:
+            print(e)
             return Response({'error': e}, status=500)
 
 
