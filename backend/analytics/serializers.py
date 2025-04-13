@@ -67,8 +67,7 @@ class GameEventSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = GameEvent
-        fields = ['
-                  ', 'time', 'client', 'session']
+        fields = ['time', 'client', 'session']
         validators = [
             UniqueTogetherValidator(
                 queryset=GameEvent.objects.all(),
