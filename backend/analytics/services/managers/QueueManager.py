@@ -3,11 +3,12 @@ import requests
 from requests.auth import HTTPBasicAuth
 from ..Utilities import generate_secure_password, secure_hash_base64
 from backend.celery import add_queue, delete_queue
+from django.conf import settings 
 
 class RabbitAccountManager:
     def __init__(self, client):
         self.client_name = client
-        self.RABBITMQ_API_URL = "http://localhost:15672/api"
+        self.RABBITMQ_API_URL = f"http://{settings.RABBITMQ_URL}:15672/api"
         self.ADMIN_USER = "guest"
         self.ADMIN_PASS = "guest"
         self.tags = ["management"]
