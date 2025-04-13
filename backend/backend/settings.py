@@ -30,12 +30,26 @@ if DEBUG == "True":
 else:
     SECRET_KEY = os.getenv('SECRET_KEY') 
 
+
+
+if DEBUG:
+    POSTGRES_URL="localhost"
+    RABBITMQ_MANAGEMENT_URL="localhost:15672"
+    FRONTEND_URL="localhost:5173"
+else:
+    POSTGRES_URL=os.getenv("POSTGRES_URL")
+    RABBITMQ_URL=os.getenv("RABBITMQ_URL")
+    FRONTEND_URL=os.getenv("FRONTEND_URL")
+
+
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
-    ALLOWED_HOSTS = ['*'] # change this
-
-# Application definition
+    ALLOWED_HOSTS = [
+        POSTGRES_URL,
+                     RABBITMQ_MANAGEMENT_URL,
+                     FRONTEND_URL
+        ]
 
 INSTALLED_APPS = [
     'corsheaders',
@@ -87,28 +101,17 @@ ASGI_APPLICATION = "backend.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-if DEBUG:
-    DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': 'postgres',         
-                'USER': 'postgres',       
-                'PASSWORD': 'admin', 
-                'HOST': 'localhost',           
-                'PORT': '5432',                 
-            }
-        }
-else:
-    DATABASES = {
+DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': 'OAnalyticsDB',         
-            'USER': 'OdysseyAnalytics',       
-            'PASSWORD': 'OdysseyHospital', 
-            'HOST': 'localhost',            
-            'PORT': '5432',                
+            'NAME': 'postgres',         
+            'USER': 'postgres',       
+            'PASSWORD': 'admin', 
+            'HOST': f'{POSTGRES_URL}',           
+            'PORT': '5432',                 
         }
     }
+
 
 
 
@@ -155,7 +158,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = f'amqp://guest:guest@{os.getenv("RABBITMQ_URL")}:5672/analytic'  
+CELERY_BROKER_URL = f'amqp://guest:guest@{RABBITMQ_URL}:5672/analytic'  
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_BACKEND = 'rpc://'
@@ -187,9 +190,7 @@ if DEBUG:
     ]
 else:
     CORS_ALLOWED_ORIGINS = [        # change this
-        "http://localhost:5173",
-        "http://localhost:8000",
-        "http://localhost:3000"
+        FRONTEND_URL
     ]
 
 REST_FRAMEWORK = {
