@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-
+from django.db.models import Q, F, CheckConstraint
 
 max_name_length = 300
 
@@ -47,6 +47,11 @@ class Session(models.Model):
         if self.start_time and self.end_time:
             self.duration = self.end_time - self.start_time
         super().save(*args, **kwargs)
+
+    class Meta:
+        constraints = [
+            CheckConstraint(check=Q(start_time__lt=F('end_time')), name='start_before_end')
+        ]
 
 
 class GameEvent(models.Model):
