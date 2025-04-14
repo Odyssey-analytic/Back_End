@@ -39,14 +39,16 @@ def debug_task(self):
 
 @shared_task
 def add_queue(queue_name):
-    print(f"Adding queue {queue_name}")
-    app.control.add_consumer(queue_name, reply=True)
-    print(f"Added queue {queue_name}")
+    # print(f"Adding queue {queue_name}")
+    # app.control.add_consumer(queue_name, reply=True)
+    # print(f"Added queue {queue_name}")
+    pass
 
 
 @shared_task
 def delete_queue(queue_name):
-    print(f"deleting queue {queue_name}")
-    app.control.cancel_consumer(queue_name, reply=True)
-    print(f"deleted queue {queue_name}")
+    # print(f"deleting queue {queue_name}")
+    # app.control.cancel_consumer(queue_name, reply=True)
+    # print(f"deleted queue {queue_name}")
+    pass
     
