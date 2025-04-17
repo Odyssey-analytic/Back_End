@@ -43,14 +43,20 @@ class LoginSerializer(serializers.Serializer):
 
         if not user:
             raise serializers.ValidationError("Invalid username/email or password")
-
+        
+        is_first_login = user.is_first_login
+        if is_first_login:
+            user.is_first_login = False
+            user.save()
+    
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
         return {
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'username': user.username,
-            'email': user.email
+            'email': user.email,
+            'is_first_login': is_first_login
         }
       
 class GameEventSerializer(serializers.ModelSerializer):
