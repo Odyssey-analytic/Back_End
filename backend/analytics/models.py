@@ -6,6 +6,7 @@ max_name_length = 300
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
+    is_first_login = models.BooleanField(default=True)
 
 class User(models.Model):
     name = models.CharField(max_length=max_name_length)
