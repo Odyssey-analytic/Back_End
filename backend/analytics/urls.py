@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from .views import *
 urlpatterns = [
-    path('user/', UserView.as_view(), name='account'),
+    path('game/', GameView.as_view(), name='game'),
     path('token/', TokenView.as_view(), name='token'),
     path('signup/', CustomUserSignUpView.as_view(), name='signup'),
     path('login/', LoginView.as_view(), name='login'),
