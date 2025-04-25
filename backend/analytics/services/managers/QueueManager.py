@@ -8,27 +8,29 @@ from django.conf import settings
 class RabbitAccountManager:
     def __init__(self, client):
         self.client_name = client
+        self.RABBITMQ_API_URL = f"http://{settings.RABBITMQ_URL}:15672/api"
+        self.ADMIN_USER = "guest"
+        self.ADMIN_PASS = "guest"
+        self.tags = ["management"]
         self.passowrdlength = 64 
 
-    @staticmethod
-    def account_exist(username):
+    def account_exist(self, username):
         check_response = requests.get(
-            f"{settings.RABBITMQ_API_URL}/users/{username}",
-            auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+            f"{self.RABBITMQ_API_URL}/users/{username}",
+            auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
             timeout=10
         )
         if check_response.status_code == 200:
             return True
         if check_response.status_code == 404:
             return False
-    
-    @staticmethod
-    def create_vhost(username):
+
+    def create_vhost(self, username):
         vhost_name = f"{username}_vhost"
 
         create_vhost_response = requests.put(
-            f"{settings.RABBITMQ_API_URL}/vhosts/{vhost_name}",
-            auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+            f"{self.RABBITMQ_API_URL}/vhosts/{vhost_name}",
+            auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
             timeout=10
         )
 
@@ -42,8 +44,8 @@ class RabbitAccountManager:
             raise ValueError("Unexpected response during vhost creation")
         
         permissions_response = requests.put(
-                f"{settings.RABBITMQ_API_URL}/permissions/{vhost_name}/{username}",
-                auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+                f"{self.RABBITMQ_API_URL}/permissions/{vhost_name}/{username}",
+                auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
                 json={
                     "configure": "",  
                     "write": ".*",    
@@ -55,8 +57,8 @@ class RabbitAccountManager:
 
     def delete_vhost(self, vhost_name):
         delete_response = requests.delete(
-            f"{settings.RABBITMQ_API_URL}/vhosts/{vhost_name}",
-            auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+            f"{self.RABBITMQ_API_URL}/vhosts/{vhost_name}",
+            auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
             timeout=10
         )
 
@@ -78,8 +80,8 @@ class RabbitAccountManager:
             raise KeyError("account with this username already exists")
         else:
             create_response = requests.put(
-                f"{settings.RABBITMQ_API_URL}/users/{username}",
-                auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+                f"{self.RABBITMQ_API_URL}/users/{username}",
+                auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
                 json={
                     "password": password,
                     "tags": ["management"]
@@ -97,8 +99,8 @@ class RabbitAccountManager:
                 raise ValueError("Unexpected response")
 
             set_permissions = requests.put(
-                f"{settings.RABBITMQ_API_URL}/permissions/analytic/{username}",
-                auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+                f"{self.RABBITMQ_API_URL}/permissions/analytic/{username}",
+                auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
                 json={
                     "configure": "",
                     "write": ".*",
@@ -114,8 +116,8 @@ class RabbitAccountManager:
     def remove_account(self):
         username = self.client_name
         delete_response = requests.delete(
-            f"{settings.RABBITMQ_API_URL}/users/{username}",
-            auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+            f"{self.RABBITMQ_API_URL}/users/{username}",
+            auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
             timeout=10
         )
 
@@ -128,14 +130,14 @@ class RabbitAccountManager:
             print(f"Unexpected response: {delete_response.status_code} - {delete_response.text}")
             raise ValueError("Unexpected response")
 
-    @staticmethod
-    def add_queue(username, VHOST, queue_name: str, queue_type: queue_type):
+    def add_queue(self, VHOST, queue_name: str, queue_type: queue_type):
+        username = self.client_name
         queue_name = f"{username}.{VHOST}.{queue_name}.{queue_type.name}"  
         #queue_name = secure_hash_base64(queue_name)
 
         create_queue_response = requests.put(
-            f"{settings.RABBITMQ_API_URL}/queues/analytic/{queue_name}",
-            auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+            f"{self.RABBITMQ_API_URL}/queues/analytic/{queue_name}",
+            auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
             json={
                 "durable": True
             },
@@ -158,8 +160,8 @@ class RabbitAccountManager:
         full_queue_name = f"{queue_name}"
 
         delete_response = requests.delete(
-            f"{settings.RABBITMQ_API_URL}/queues/{VHOST}/{full_queue_name}",
-            auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
+            f"{self.RABBITMQ_API_URL}/queues/{VHOST}/{full_queue_name}",
+            auth=HTTPBasicAuth(self.ADMIN_USER, self.ADMIN_PASS),
             timeout=10
         )
 

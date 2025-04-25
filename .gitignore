@@ -175,4 +175,3 @@ cython_debug/
 backend_env/
 .qodo
 static/
-backend/thumbnails/
