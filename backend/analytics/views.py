@@ -115,24 +115,30 @@ class GameView(APIView):
             # if not request.user.has_perm('backend.add_game'):
             #     raise PermissionDenied("You don't have permission to create games")
 
-            request.data['owner'] = request.user.id
+            # Create a mutable copy of request.data
+            request_data = request.data.copy()
+            request_data['owner'] = request.user.id
+            
             owner = CustomUser.objects.get(id=request.user.id)
-            serializer = GameSerializer(data=request.data, context={'request': request})
+            serializer = GameSerializer(data=request_data, context={'request': request})
             
             if serializer.is_valid():
                 game = serializer.save()
                 
-                token = GenerateToken(request.data["name"], owner.rb_username, game, 
-                              [
-                    {
-                        "queue_name": "start_session",
-                        "queue_type": "SINGLE_VALUE"
-                    },
-                    {
-                        "queue_name": "end_session",
-                        "queue_type": "SINGLE_VALUE"
-                    }
-                ]   
+                token = GenerateToken(
+                    request_data["name"], 
+                    owner.rb_username, 
+                    game, 
+                    [
+                        {
+                            "queue_name": "start_session",
+                            "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "end_session",
+                            "queue_type": "SINGLE_VALUE"
+                        }
+                    ]   
                 )
 
                 return Response({
@@ -150,13 +156,13 @@ class GameView(APIView):
                 'status': 'error',
                 'message': str(e)
             }, status=status.HTTP_403_FORBIDDEN)
-            
-        except Exception as e:     
-            return Response({
-                'status': 'error',
-                'message': 'An unexpected error occurred',
-                'detail': str(e)
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    # except Exception as e:     
+    #     return Response({
+    #         'status': 'error',
+    #         'message': 'An unexpected error occurred',
+    #         'detail': str(e)
+    #     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
