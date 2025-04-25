@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, NotFound, PermissionDenied
 from .services.managers.UserManager import GenerateToken
 from .services.managers.QueueManager import RabbitAccountManager
-from .models import Token, Queue, CustomUser, Client
+from .models import Token, Queue, CustomUser, Client, Game
 import json
 import random
 import jwt
@@ -223,6 +223,41 @@ class GameView(APIView):
                 'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def get(self, request):
+        try:
+            games = Game.objects.filter(owner=request.user)
+            
+            serializer = GameSerializer(games, many=True, context={'request': request})
+            
+            processed_games = []
+            for game in serializer.data:
+                game_data = {k: v for k, v in game.items() if k != 'owner'}
+                
+                game_data['has_thumbnail'] = game['thumbnail'] is not None
+                game_data['platform_count'] = len(game['platform'])
+
+                game_data["retention"] = "125"
+                game_data["DNU"] = "2405"
+                game_data["DAU"] = "20"
+
+                game_data["retention_delta"] = "+10.45%"
+                game_data["DNU_delta"] = "-20.4%"
+                game_data["DAU_delta"] = "+15%"
+
+                processed_games.append(game_data)
+
+
+            return Response({
+                'status': 'success',
+                'games': processed_games
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': 'An unexpected error occurred while fetching games',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class TokenView(APIView):
