@@ -106,7 +106,7 @@ if DEBUG:
                 'ENGINE': 'django.db.backends.postgresql',
                 'NAME': 'postgres',         
                 'USER': 'postgres',       
-                'PASSWORD': 'admin', 
+                'PASSWORD': '22816238', 
                 'HOST': f'{POSTGRES_URL}',           
                 'PORT': '5432',                 
             }
@@ -234,3 +234,14 @@ RABBITMQ_API_URL = f"http://{RABBITMQ_URL}:15672/api"
 ADMIN_USER = "guest"
 ADMIN_PASS = "guest"
 tags = ["management"]
+
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID')
+if not GOOGLE_OAUTH_CLIENT_ID:
+    raise ValueError(
+        'GOOGLE_OAUTH_CLIENT_ID is missing.'
+        'Have you put it in a file at core/.env ?'
+    )
+
+# We need these lines below to allow the Google sign in popup to work.
+SECURE_REFERRER_POLICY = 'no-referrer-when-downgrade'
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"

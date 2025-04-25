@@ -8,14 +8,73 @@ from .models import Token, Queue, CustomUser, Client
 import json
 import random
 import jwt
+import os
 from .serializers import CustomUserSignUpSerializer, LoginSerializer, GameSerializer
 from datetime import datetime, timedelta, timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from django.shortcuts import render
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
 # Create your views here.
+class SignInAPIView(APIView):
+    """
+    API View for rendering the sign-in page.
+    """
+
+    def get(self, request, *args, **kwargs):
+        # Render the 'sign_in.html' template
+        return render(request, 'sign_in.html')
+
+class AuthReceiverAPIView(APIView):
+    """
+    Google calls this endpoint after the user has signed in with their Google account.
+    """
+
+    def post(self, request, *args, **kwargs):
+        token = request.data.get('credential')
+
+        if not token:
+            return Response({"error": "Token is missing."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_data = id_token.verify_oauth2_token(
+                token, requests.Request(), os.environ['GOOGLE_OAUTH_CLIENT_ID']
+            )
+        except ValueError:
+            return Response({"error": "Invalid token."}, status=status.HTTP_403_FORBIDDEN)
+
+        
+        user_email = user_data.get('email')
+        user = None
+        try:
+            user = CustomUser.objects.get(email__iexact=user_email)
+        except CustomUser.DoesNotExist:
+            None
+        
+        if not user:
+            return Response({"error": "User does not exist with the email."}, status=status.HTTP_404_NOT_FOUND)
+        
+        is_first_login = user.is_first_login
+        if is_first_login:
+            user.is_first_login = False
+            user.save()
+    
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'username': user.username,
+            'email': user.email,
+            'is_first_login': is_first_login,
+            
+        }, status=status.HTTP_200_OK)
+
 class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny] 
 
