@@ -157,12 +157,12 @@ class GameView(APIView):
                 'message': str(e)
             }, status=status.HTTP_403_FORBIDDEN)
         
-    # except Exception as e:     
-    #     return Response({
-    #         'status': 'error',
-    #         'message': 'An unexpected error occurred',
-    #         'detail': str(e)
-    #     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:     
+            return Response({
+                'status': 'error',
+                'message': 'An unexpected error occurred',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 
