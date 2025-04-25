@@ -1,8 +1,9 @@
 from rest_framework import serializers
-from .models import User, CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Client
+from .models import CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Client, Game
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import authenticate
+from analytics.services.managers.QueueManager import RabbitAccountManager
 
 class CustomUserSignUpSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -13,12 +14,19 @@ class CustomUserSignUpSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password', 'confirm_password']
 
     def validate(self, data):
+        if RabbitAccountManager.account_exist(data['username']):
+            raise serializers.ValidationError({"username": "an account with this username exists!"})
         if data['password'] != data['confirm_password']:
             raise serializers.ValidationError({"confirm_password": "Passwords don't match"})
         return data
 
     def create(self, validated_data):
         validated_data.pop('confirm_password')  # Remove confirm_password from validated data
+        account_manager = RabbitAccountManager(validated_data['username'])
+        username, password = account_manager.create_account()
+        validated_data['rb_username'] = username
+        validated_data['rb_password'] = password
+
         user = CustomUser.objects.create_user(**validated_data)
         return user
     
@@ -58,7 +66,24 @@ class LoginSerializer(serializers.Serializer):
             'email': user.email,
             'is_first_login': is_first_login
         }
-      
+
+
+class GameSerializer(serializers.ModelSerializer):
+    platform = serializers.ListField(
+        child=serializers.ChoiceField(choices=Game.Platform.choices),
+        allow_empty=False 
+    )
+    
+    class Meta:
+        model = Game
+        fields = '__all__'
+
+    def validate_platform(self, value):
+        if not value:
+            raise serializers.ValidationError("At least one platform must be selected.")
+        return value
+
+
 class GameEventSerializer(serializers.ModelSerializer):
     client_id = serializers.PrimaryKeyRelatedField(
         queryset=Client.objects.all(),
@@ -92,3 +117,5 @@ class SessionEndEventSerializer(GameEventSerializer):
     class Meta(GameEventSerializer.Meta):
         model = SessionEndEvent
         fields = GameEventSerializer.Meta.fields
+
+
