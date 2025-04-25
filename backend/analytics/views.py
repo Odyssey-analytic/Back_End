@@ -1,17 +1,19 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import AuthenticationFailed, NotFound
-from .services.managers.UserManager import UserManager
+from rest_framework.exceptions import AuthenticationFailed, NotFound, PermissionDenied
+from .services.managers.UserManager import GenerateToken
+from .services.managers.QueueManager import RabbitAccountManager
 from .models import Token, Queue, CustomUser, Client
 import json
 import random
 import jwt
 import os
-from .serializers import CustomUserSignUpSerializer, LoginSerializer
+from .serializers import CustomUserSignUpSerializer, LoginSerializer, GameSerializer
 from datetime import datetime, timedelta, timezone
 from django.core.mail import send_mail
 from django.conf import settings
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from django.shortcuts import render
@@ -74,6 +76,8 @@ class AuthReceiverAPIView(APIView):
         }, status=status.HTTP_200_OK)
 
 class PasswordResetConfirmView(APIView):
+    permission_classes = [AllowAny] 
+
     def post(self, request, token):
         sec_key = settings.SECRET_KEY
         # Decode the token
@@ -106,6 +110,7 @@ class PasswordResetConfirmView(APIView):
         return Response({'message': 'Password reset successfully.'}, status=status.HTTP_200_OK)
 
 class PasswordResetRequestView(APIView):
+    permission_classes = [AllowAny] 
     def post(self, request):
         try:
             sec_key = settings.SECRET_KEY
@@ -141,7 +146,7 @@ class PasswordResetRequestView(APIView):
 
 
 class CustomUserSignUpView(APIView):
-
+    permission_classes = [AllowAny] 
     serializer_class = CustomUserSignUpSerializer
 
     def post(self, request):
@@ -152,34 +157,78 @@ class CustomUserSignUpView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
-
+    permission_classes = [AllowAny] 
     serializer_class = LoginSerializer
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             return Response(serializer.validated_data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        
 
-class UserView(APIView):
+class GameView(APIView):
+    permission_classes = [IsAuthenticated]
+    
     def post(self, request):
-        print(f"Fuck YOU {request.body}")
         try:
-            
-            data = json.loads(request.body)
-            
-            manager = UserManager()
-            user = manager.create_user(data["name"])
+            # if not request.user.has_perm('backend.add_game'):
+            #     raise PermissionDenied("You don't have permission to create games")
 
-            return Response({'id': user.id}, status=status.HTTP_200_OK)
-        except Exception as e:
-            print(e)
-            return Response(f"error: {e}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Create a mutable copy of request.data
+            request_data = request.data.copy()
+            request_data['owner'] = request.user.id
+            
+            owner = CustomUser.objects.get(id=request.user.id)
+            serializer = GameSerializer(data=request_data, context={'request': request})
+            
+            if serializer.is_valid():
+                game = serializer.save()
+                
+                token = GenerateToken(
+                    request_data["name"], 
+                    owner.rb_username, 
+                    game, 
+                    [
+                        {
+                            "queue_name": "start_session",
+                            "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "end_session",
+                            "queue_type": "SINGLE_VALUE"
+                        }
+                    ]   
+                )
+
+                return Response({
+                    'status': 'success',
+                    'token': f'{token.value}'
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    'status': 'error',
+                    'errors': serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        except PermissionDenied as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_403_FORBIDDEN)
         
+        except Exception as e:     
+            return Response({
+                'status': 'error',
+                'message': 'An unexpected error occurred',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 class TokenView(APIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
     def get(self, request):
-        try:
+        try:            
             token_value = request.headers.get('Authorization')
             if not token_value:
                 raise NotFound('Token not provided or invalid.') 
@@ -216,14 +265,14 @@ class TokenView(APIView):
 
         except Exception as e:
             print(e)
-            return Response(f"error: {e}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"{e}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def post(self, request):
         try:
             data = json.loads(request.body)
 
-            manager = UserManager(data["user_name"])
-            token = manager.add_token(data["token_name"], data["queues"])
+            manager = UserManager(data["username"])
+            token = manager.add_token(data["name"], data["queues"])
 
             return Response({'token': token.value})
         except Exception as e:

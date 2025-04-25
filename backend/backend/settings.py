@@ -208,10 +208,13 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
@@ -226,6 +229,11 @@ EMAIL_HOST_PASSWORD = 'cwle pfvr uhqc ezde'
 STATIC_ROOT= os.getcwd() + "/static"
 
 
+
+RABBITMQ_API_URL = f"http://{RABBITMQ_URL}:15672/api"
+ADMIN_USER = "guest"
+ADMIN_PASS = "guest"
+tags = ["management"]
 
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID')
 if not GOOGLE_OAUTH_CLIENT_ID:

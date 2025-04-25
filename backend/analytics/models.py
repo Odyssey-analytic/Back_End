@@ -1,24 +1,42 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Q, F, CheckConstraint
+from django.contrib.postgres.fields import ArrayField
 
 max_name_length = 300
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     is_first_login = models.BooleanField(default=True)
-
-class User(models.Model):
-    name = models.CharField(max_length=max_name_length)
     rb_username = models.CharField(max_length=max_name_length, unique=True)
     rb_password = models.CharField(max_length=64)
+
+class Product(models.Model):
+    name = models.TextField(max_length=max_name_length, blank=False, null=False, unique=True)
+    description = models.TextField(max_length=500, blank=True, null=True)
+    thumbnail = models.ImageField(upload_to='thumbnails/', blank=True, null=True)
+    owner = models.ForeignKey(CustomUser, related_name='products', on_delete=models.CASCADE)
+
+class Game(Product):
+
+    class Platform(models.TextChoices):
+        ANDROID = 'android', 'Android'
+        PC =  'pc', 'PC'
+        IOS = 'ios', 'IOS'
+
+    engine = models.TextField(max_length=max_name_length, null=False)
+    platform = ArrayField(
+        models.CharField(max_length=7,choices=Platform.choices),
+        default=list,
+        blank=False)
+
+
 
 class Token(models.Model):
     name = models.CharField(max_length=max_name_length)
     value = models.CharField(max_length=max_name_length, unique=True)
-    VHOST_name = models.CharField(max_length=max_name_length)
     created_at = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey(User, related_name='tokens', on_delete=models.CASCADE)
+    Product = models.ForeignKey(Product, related_name='tokens', on_delete=models.CASCADE)
 
     def is_expired(self):
         return False
