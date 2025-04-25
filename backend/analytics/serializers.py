@@ -3,6 +3,8 @@ from .models import User, CustomUser, GameEvent, SessionStartEvent, SessionEndEv
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import authenticate
+from django.db.models import Q
+
 
 class CustomUserSignUpSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -31,6 +33,10 @@ class LoginSerializer(serializers.Serializer):
         identifier = data.get('identifier')
         password = data.get('password')
 
+        query_set = CustomUser.objects.filter(Q(email=identifier) or Q(username=identifier))
+        if not len(query_set):
+            raise serializers.ValidationError({"error":"Invalid username/email"})
+        
         user = authenticate(username=identifier, password=password)
 
         if not user:
@@ -42,7 +48,7 @@ class LoginSerializer(serializers.Serializer):
                 user = None
 
         if not user:
-            raise serializers.ValidationError("Invalid username/email or password")
+            raise serializers.ValidationError({"error":"Invalid password"})
         
         is_first_login = user.is_first_login
         if is_first_login:
