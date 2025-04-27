@@ -153,7 +153,9 @@ class CustomUserSignUpView(APIView):
         serializer = CustomUserSignUpSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            print(serializer.errors)
             return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):

@@ -20,19 +20,6 @@ def is_running_under_uvicorn():
 
 app.autodiscover_tasks()
 
-if is_running_under_celery():
-    import analytics.celery_consumers  #
-    from django.apps import apps
-    apps.check_apps_ready() 
-    for attr_name in dir(analytics.celery_consumers):
-        attr = getattr(analytics.celery_consumers, attr_name)
-        if (
-            inspect.isclass(attr) 
-            and issubclass(attr, bootsteps.Step)  # Only Celery steps
-            and hasattr(attr, "name")  # Must have a name
-        ):
-            app.steps["consumer"].add(attr)
-
 @app.task(bind=True, ignore_result=True)
 def debug_task(self):
     print(f'Request: {self.request!r}')
@@ -52,3 +39,15 @@ def delete_queue(queue_name):
     # print(f"deleted queue {queue_name}")
     pass
     
+if is_running_under_celery():
+    import analytics.celery_consumers  #
+    from django.apps import apps
+    apps.check_apps_ready() 
+    for attr_name in dir(analytics.celery_consumers):
+        attr = getattr(analytics.celery_consumers, attr_name)
+        if (
+            inspect.isclass(attr) 
+            and issubclass(attr, bootsteps.Step)  # Only Celery steps
+            and hasattr(attr, "name")  # Must have a name
+        ):
+            app.steps["consumer"].add(attr)
