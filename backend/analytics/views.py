@@ -15,7 +15,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from google.oauth2 import id_token
-from google.auth.transport import requests
+from google.auth.transport import requests as google_requests
 from django.shortcuts import render
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -25,6 +25,7 @@ class SignInAPIView(APIView):
     """
     API View for rendering the sign-in page.
     """
+    permission_classes = [AllowAny] 
 
     def get(self, request, *args, **kwargs):
         # Render the 'sign_in.html' template
@@ -34,21 +35,23 @@ class AuthReceiverAPIView(APIView):
     """
     Google calls this endpoint after the user has signed in with their Google account.
     """
+    permission_classes = [AllowAny] 
 
     def post(self, request, *args, **kwargs):
         token = request.data.get('credential')
-
+        print(token)
+        print(os.getenv('GOOGLE_OAUTH_CLIENT_ID'))
         if not token:
             return Response({"error": "Token is missing."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user_data = id_token.verify_oauth2_token(
-                token, requests.Request(), os.environ['GOOGLE_OAUTH_CLIENT_ID']
+                token, google_requests.Request(), os.getenv('GOOGLE_OAUTH_CLIENT_ID')
             )
-        except ValueError:
+        except Exception as e:
+            print(e)
             return Response({"error": "Invalid token."}, status=status.HTTP_403_FORBIDDEN)
-
-        
+        print(f"user data: {user_data}")        
         user_email = user_data.get('email')
         user = None
         try:
@@ -57,6 +60,7 @@ class AuthReceiverAPIView(APIView):
             None
         
         if not user:
+            print("No user like this")
             return Response({"error": "User does not exist with the email."}, status=status.HTTP_404_NOT_FOUND)
         
         is_first_login = user.is_first_login
@@ -86,21 +90,27 @@ class PasswordResetConfirmView(APIView):
             user_id = payload['user_id']
             user = CustomUser.objects.get(id=user_id)
         except jwt.ExpiredSignatureError:
+            print("jwt.ExpiredSignatureError")
             return Response({'error': 'Token has expired.'}, status=status.HTTP_400_BAD_REQUEST)
         except jwt.InvalidTokenError:
+            print("jwt.InvalidTokenError")
             return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
         except CustomUser.DoesNotExist:
+            print("CustomUser.DoesNotExist")
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            print("Fuck you")
             return Response({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         # Validate the new password and confirmation
-        new_password = request.data.get('new_password')
+        new_password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
         
         if not new_password or not confirm_password:
+            print("one field is empty")
             return Response({'error': 'Both password fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
         
         if new_password != confirm_password:
+            print("passwords do not match")
             return Response({'error': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Update the user's password
@@ -207,6 +217,7 @@ class GameView(APIView):
                     'token': f'{token.value}'
                 }, status=status.HTTP_201_CREATED)
             else:
+                print(serializer.errors)
                 return Response({
                     'status': 'error',
                     'errors': serializer.errors
@@ -278,7 +289,7 @@ class TokenView(APIView):
             if token_obj.is_expired():
                 raise AuthenticationFailed('Token has expired.')
 
-            user = token_obj.user
+            user = token_obj.Product.owner
             queues = Queue.objects.filter(token=token_obj)
 
             queue_data = [{"fullname": queue.fullname, "name": queue.name} for queue in queues]
