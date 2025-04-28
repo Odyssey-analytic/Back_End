@@ -130,8 +130,7 @@ class AverageSessionLength_Monitor(AsyncHttpConsumer):
             bucket_seconds = 30
             bucket = timedelta(seconds=bucket_seconds)
 
-            sessions = await sync_to_async(list)(
-                Session.objects.filter(end_time__isnull=False, token=token_obj).order_by('end_time'))
+            sessions = await sync_to_async(list)(Session.objects.filter(end_time__isnull=False, token=token_obj).order_by('end_time'))
             if not sessions:
                 await self.send_sse_message({"text": json.dumps({"error": "the token dosent have any sessions"})})
                 return
@@ -143,8 +142,7 @@ class AverageSessionLength_Monitor(AsyncHttpConsumer):
             end_time = sessions[-1].end_time
 
             while True:
-                sessions = await sync_to_async(list)(
-                    Session.objects.filter(end_time__isnull=False, token=token_obj).order_by('end_time'))
+                sessions = await sync_to_async(list)(Session.objects.filter(end_time__isnull=False, token=token_obj).order_by('end_time'))
 
                 end_time = sessions[-1].end_time
 
@@ -162,7 +160,6 @@ class AverageSessionLength_Monitor(AsyncHttpConsumer):
 
                 await self.send_sse_message({"text": json.dumps(update_payload)})
                 print("Update sent:", update_payload)
-                await asyncio.sleep(0.1)
 
                 current_time += bucket
 
@@ -174,3 +171,4 @@ class AverageSessionLength_Monitor(AsyncHttpConsumer):
     async def send_sse_message(self, event):
         message = event["text"]
         await self.send_body(f"data: {message}\n\n".encode(), more_body=True)
+
