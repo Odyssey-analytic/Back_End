@@ -11,6 +11,7 @@ from urllib.parse import parse_qs
 from analytics.models import Token, Session
 
 
+
 async def get_running_avg_sessions(token, bucket_seconds=3600):
     ended_sessions = Session.objects.filter(end_time__isnull=False, token=token).order_by('end_time')
     ended_sessions_exsists_task = sync_to_async(ended_sessions.exists)()
@@ -48,7 +49,6 @@ async def get_running_avg_sessions(token, bucket_seconds=3600):
         current_time += bucket
 
     return result
-
 
 class KPI_Monitor(AsyncHttpConsumer):
     async def handle(self, body):
