@@ -1,18 +1,20 @@
 import asyncio
+import json
+import uuid
+from asgiref.sync import sync_to_async, async_to_sync
 from channels.generic.http import AsyncHttpConsumer
 from channels.layers import get_channel_layer
-from asgiref.sync import sync_to_async, async_to_sync
-from analytics.models import Token, Session
-import json
-from urllib.parse import parse_qs
-from datetime import datetime,timezone
-import uuid
+from datetime import datetime, timezone
 from datetime import timedelta
+from urllib.parse import parse_qs
+
+from analytics.models import Token, Session
+
 
 
 async def get_running_avg_sessions(token, bucket_seconds=3600):
     ended_sessions = Session.objects.filter(end_time__isnull=False, token=token).order_by('end_time')
-    ended_sessions_exsists_task = sync_to_async(ended_sessions.exists)() 
+    ended_sessions_exsists_task = sync_to_async(ended_sessions.exists)()
     if not (await ended_sessions_exsists_task):
         return []
 
@@ -65,7 +67,7 @@ class KPI_Monitor(AsyncHttpConsumer):
         if not token_value or not kpi:
             await self.send_body(b"data: Invalid request\n\n", more_body=False)
             return
-        
+
         print(group)
         await self.channel_layer.group_add(group, self.channel_name)
         print(self.channel_layer)
@@ -74,7 +76,7 @@ class KPI_Monitor(AsyncHttpConsumer):
             while True:
                 await asyncio.sleep(5)
                 kpi = await sync_to_async(GlobalKPIDaily.objects.get)(token=token_obj)
-                #print(kpi)
+                # print(kpi)
                 now_utc = datetime.now(timezone.utc)
                 formatted = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
                 current_value = kpi.daily_active_users
@@ -83,7 +85,7 @@ class KPI_Monitor(AsyncHttpConsumer):
                     "value": current_value
                 }
                 await self.send_sse_message({"text": json.dumps(payload)})
-                
+
                 # if prev_value == current_value:
                 #     continue
                 # else:
@@ -98,7 +100,6 @@ class KPI_Monitor(AsyncHttpConsumer):
         message = event["text"]
         print(event)
         await self.send_body(f"data: {message}\n\n".encode(), more_body=True)
-
 
 
 class AverageSessionLength_Monitor(AsyncHttpConsumer):
@@ -170,3 +171,4 @@ class AverageSessionLength_Monitor(AsyncHttpConsumer):
     async def send_sse_message(self, event):
         message = event["text"]
         await self.send_body(f"data: {message}\n\n".encode(), more_body=True)
+

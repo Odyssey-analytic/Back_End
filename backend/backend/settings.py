@@ -10,15 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
-from pathlib import Path
-from datetime import timedelta
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
-
+from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -28,18 +26,16 @@ DEBUG = os.getenv("DEBUG") == "True"
 if DEBUG:
     SECRET_KEY = 'django-insecure-(_=$cjl9=k%*zfgw*)*sny!-tn21##39fphwgtsr+o%gd&$+(k'
 else:
-    SECRET_KEY = os.getenv('SECRET_KEY') 
-
-
+    SECRET_KEY = os.getenv('SECRET_KEY')
 
 if DEBUG:
-    POSTGRES_URL="localhost"
-    RABBITMQ_URL="localhost"
-    FRONTEND_URL="localhost:5173"
+    POSTGRES_URL = "localhost"
+    RABBITMQ_URL = "localhost"
+    FRONTEND_URL = "localhost:5173"
 else:
-    POSTGRES_URL=os.getenv("POSTGRES_URL")
-    RABBITMQ_URL=os.getenv("RABBITMQ_URL")
-    FRONTEND_URL=os.getenv("FRONTEND_URL")
+    POSTGRES_URL = os.getenv("POSTGRES_URL")
+    RABBITMQ_URL = os.getenv("RABBITMQ_URL")
+    FRONTEND_URL = os.getenv("FRONTEND_URL")
 
 if DEBUG:
     ALLOWED_HOSTS = ['*']
@@ -50,7 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'channels',
     'rest_framework',
-    'drf_yasg', 
+    'drf_yasg',
     'analytics',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -93,34 +89,30 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 ASGI_APPLICATION = "backend.asgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 if DEBUG:
     DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': 'postgres',         
-                'USER': 'postgres',       
-                'PASSWORD': '22816238', 
-                'HOST': f'{POSTGRES_URL}',           
-                'PORT': '5432',                 
-            }
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': 'postgres',
+            'USER': 'postgres',
+            'PASSWORD': 'admin',
+            'HOST': f'{POSTGRES_URL}',
+            'PORT': '5432',
         }
+    }
 else:
     DATABASES = {
-            'default': {
-                'ENGINE': 'django.db.backends.postgresql',
-                'NAME': os.getenv("POSTGRES_DB_NAME"),         
-                'USER': os.getenv("POSTGRES_DB_USER"),       
-                'PASSWORD': os.getenv("POSTGRES_DB_PASSWORD"), 
-                'HOST': f'{POSTGRES_URL}',           
-                'PORT': '5432',                 
-            }
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv("POSTGRES_DB_NAME"),
+            'USER': os.getenv("POSTGRES_DB_USER"),
+            'PASSWORD': os.getenv("POSTGRES_DB_PASSWORD"),
+            'HOST': f'{POSTGRES_URL}',
+            'PORT': os.getenv("POSTGRES_DB_PORT"),
         }
-
-
-
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -153,7 +145,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
@@ -161,15 +152,16 @@ STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+RABBITMQ_API_PORT = os.getenv('RABBITMQ_API_PORT')
+RABBITMQ_API_UI_PORT = os.getenv('RABBITMQ_API_UI_PORT')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 RABBITMQ_VHOST = os.getenv("RABBITMQ_VHOST")
-CELERY_BROKER_URL = f'amqp://guest:guest@{RABBITMQ_URL}:5672/{RABBITMQ_VHOST}'  
+CELERY_BROKER_URL = f'amqp://guest:guest@{RABBITMQ_URL}:{RABBITMQ_API_PORT}/{RABBITMQ_VHOST}'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_BACKEND = 'rpc://'
-CELERY_TIMEZONE = 'GMT' 
-
+CELERY_TIMEZONE = 'GMT'
 
 # CHANNEL_LAYERS = {
 #     "default": {
@@ -188,6 +180,7 @@ CHANNEL_LAYERS = {
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+
 if DEBUG:
     CORS_ALLOWED_ORIGINS = [
         "http://localhost:5173",
@@ -195,9 +188,10 @@ if DEBUG:
         "http://localhost:3000"
     ]
 else:
-    CORS_ALLOWED_ORIGINS = [        # change this
+    CORS_ALLOWED_ORIGINS = [  # change this
         f"https://{FRONTEND_URL}:443",
-	f"https://{RABBITMQ_URL}:15672"
+        f"https://{RABBITMQ_URL}:{RABBITMQ_API_UI_PORT}",
+        f"https://{FRONTEND_URL}:8080",
     ]
 
 REST_FRAMEWORK = {
@@ -222,11 +216,12 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'oddysey.analytics@gmail.com'
 EMAIL_HOST_PASSWORD = 'cwle pfvr uhqc ezde'
 
-STATIC_ROOT= os.getcwd() + "/static"
+STATIC_ROOT = os.getcwd() + "/static"
 
+RABBITMQ_API_PORT = os.getenv('RABBITMQ_API_PORT')
+RABBITMQ_API_UI_PORT = os.getenv('RABBITMQ_API_UI_PORT')
 
-
-RABBITMQ_API_URL = f"http://{RABBITMQ_URL}:15672/api"
+RABBITMQ_API_URL = f"http://{RABBITMQ_URL}:{RABBITMQ_API_UI_PORT}/api"
 ADMIN_USER = "guest"
 ADMIN_PASS = "guest"
 tags = ["management"]

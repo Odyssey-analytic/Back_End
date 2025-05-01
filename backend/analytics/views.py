@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, NotFound, PermissionDenied
 from .services.managers.UserManager import GenerateToken
 from .services.managers.QueueManager import RabbitAccountManager
-from .models import Token, Queue, CustomUser, Client
+from .models import Token, Queue, CustomUser, Client, Game
 import json
 import random
 import jwt
@@ -15,7 +15,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from google.oauth2 import id_token
-from google.auth.transport import requests
+from google.auth.transport import requests as google_requests
 from django.shortcuts import render
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -25,6 +25,7 @@ class SignInAPIView(APIView):
     """
     API View for rendering the sign-in page.
     """
+    permission_classes = [AllowAny] 
 
     def get(self, request, *args, **kwargs):
         # Render the 'sign_in.html' template
@@ -34,21 +35,23 @@ class AuthReceiverAPIView(APIView):
     """
     Google calls this endpoint after the user has signed in with their Google account.
     """
+    permission_classes = [AllowAny] 
 
     def post(self, request, *args, **kwargs):
         token = request.data.get('credential')
-
+        print(token)
+        print(os.getenv('GOOGLE_OAUTH_CLIENT_ID'))
         if not token:
             return Response({"error": "Token is missing."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             user_data = id_token.verify_oauth2_token(
-                token, requests.Request(), os.environ['GOOGLE_OAUTH_CLIENT_ID']
+                token, google_requests.Request(), os.getenv('GOOGLE_OAUTH_CLIENT_ID')
             )
-        except ValueError:
+        except Exception as e:
+            print(e)
             return Response({"error": "Invalid token."}, status=status.HTTP_403_FORBIDDEN)
-
-        
+        print(f"user data: {user_data}")        
         user_email = user_data.get('email')
         user = None
         try:
@@ -57,6 +60,7 @@ class AuthReceiverAPIView(APIView):
             None
         
         if not user:
+            print("No user like this")
             return Response({"error": "User does not exist with the email."}, status=status.HTTP_404_NOT_FOUND)
         
         is_first_login = user.is_first_login
@@ -86,21 +90,27 @@ class PasswordResetConfirmView(APIView):
             user_id = payload['user_id']
             user = CustomUser.objects.get(id=user_id)
         except jwt.ExpiredSignatureError:
+            print("jwt.ExpiredSignatureError")
             return Response({'error': 'Token has expired.'}, status=status.HTTP_400_BAD_REQUEST)
         except jwt.InvalidTokenError:
+            print("jwt.InvalidTokenError")
             return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
         except CustomUser.DoesNotExist:
+            print("CustomUser.DoesNotExist")
             return Response({'error': 'User not found.'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            print("Fuck you")
             return Response({'error': e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         # Validate the new password and confirmation
-        new_password = request.data.get('new_password')
+        new_password = request.data.get('password')
         confirm_password = request.data.get('confirm_password')
         
         if not new_password or not confirm_password:
+            print("one field is empty")
             return Response({'error': 'Both password fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
         
         if new_password != confirm_password:
+            print("passwords do not match")
             return Response({'error': 'Passwords do not match.'}, status=status.HTTP_400_BAD_REQUEST)
         
         # Update the user's password
@@ -153,7 +163,9 @@ class CustomUserSignUpView(APIView):
         serializer = CustomUserSignUpSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            print(serializer.errors)
             return Response({"message": "User created successfully"}, status=status.HTTP_201_CREATED)
+        print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
@@ -205,6 +217,7 @@ class GameView(APIView):
                     'token': f'{token.value}'
                 }, status=status.HTTP_201_CREATED)
             else:
+                print(serializer.errors)
                 return Response({
                     'status': 'error',
                     'errors': serializer.errors
@@ -223,6 +236,41 @@ class GameView(APIView):
                 'detail': str(e)
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+    def get(self, request):
+        try:
+            games = Game.objects.filter(owner=request.user)
+            
+            serializer = GameSerializer(games, many=True, context={'request': request})
+            
+            processed_games = []
+            for game in serializer.data:
+                game_data = {k: v for k, v in game.items() if k != 'owner'}
+                
+                game_data['has_thumbnail'] = game['thumbnail'] is not None
+                game_data['platform_count'] = len(game['platform'])
+
+                game_data["retention"] = "125"
+                game_data["DNU"] = "2405"
+                game_data["DAU"] = "20"
+
+                game_data["retention_delta"] = "+10.45%"
+                game_data["DNU_delta"] = "-20.4%"
+                game_data["DAU_delta"] = "+15%"
+
+                processed_games.append(game_data)
+
+
+            return Response({
+                'status': 'success',
+                'games': processed_games
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': 'An unexpected error occurred while fetching games',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class TokenView(APIView):
@@ -241,7 +289,7 @@ class TokenView(APIView):
             if token_obj.is_expired():
                 raise AuthenticationFailed('Token has expired.')
 
-            user = token_obj.user
+            user = token_obj.Product.owner
             queues = Queue.objects.filter(token=token_obj)
 
             queue_data = [{"fullname": queue.fullname, "name": queue.name} for queue in queues]
