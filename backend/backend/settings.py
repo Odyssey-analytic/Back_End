@@ -41,10 +41,6 @@ else:
     RABBITMQ_URL=os.getenv("RABBITMQ_URL")
     FRONTEND_URL=os.getenv("FRONTEND_URL")
 
-print(POSTGRES_URL)
-print(RABBITMQ_URL)
-print(FRONTEND_URL)
-
 if DEBUG:
     ALLOWED_HOSTS = ['*']
 else:
@@ -115,9 +111,9 @@ else:
     DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql',
-                'NAME': 'OAnalyticsDB',         
-                'USER': 'OdysseyAnalytics',       
-                'PASSWORD': 'OdysseyHospital', 
+                'NAME': os.getenv("POSTGRES_DB_NAME"),         
+                'USER': os.getenv("POSTGRES_DB_USER"),       
+                'PASSWORD': os.getenv("POSTGRES_DB_PASSWORD"), 
                 'HOST': f'{POSTGRES_URL}',           
                 'PORT': '5432',                 
             }
@@ -167,8 +163,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-CELERY_BROKER_URL = f'amqp://guest:guest@{RABBITMQ_URL}:5672/analytic'  
+RABBITMQ_VHOST = os.getenv("RABBITMQ_VHOST")
+CELERY_BROKER_URL = f'amqp://guest:guest@{RABBITMQ_URL}:5672/{RABBITMQ_VHOST}'  
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_BACKEND = 'rpc://'
