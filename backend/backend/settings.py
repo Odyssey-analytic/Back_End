@@ -115,7 +115,7 @@ else:
                 'USER': os.getenv("POSTGRES_DB_USER"),       
                 'PASSWORD': os.getenv("POSTGRES_DB_PASSWORD"), 
                 'HOST': f'{POSTGRES_URL}',           
-                'PORT': '5432',                 
+                'PORT': os.getenv("POSTGRES_DB_PORT"),
             }
         }
 
