@@ -97,7 +97,7 @@ class RabbitAccountManager:
                 raise ValueError("Unexpected response")
 
             set_permissions = requests.put(
-                f"{settings.RABBITMQ_API_URL}/permissions/analytic/{username}",
+                f"{settings.RABBITMQ_API_URL}/permissions/{settings.RABBITMQ_VHOST}/{username}",
                 auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
                 json={
                     "configure": "",
@@ -134,7 +134,7 @@ class RabbitAccountManager:
         #queue_name = secure_hash_base64(queue_name)
 
         create_queue_response = requests.put(
-            f"{settings.RABBITMQ_API_URL}/queues/analytic/{queue_name}",
+            f"{settings.RABBITMQ_API_URL}/queues/{settings.RABBITMQ_VHOST}/{queue_name}",
             auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
             json={
                 "durable": True
