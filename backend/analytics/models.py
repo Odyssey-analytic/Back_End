@@ -24,14 +24,14 @@ class Product(models.Model):
             ext = os.path.splitext(self.thumbnail.name)[1]
 
             hash_bytes = hashlib.sha256(
-                (self.thumbnail.name + get_random_string()).encode()
+                (self.thumbnail.name + get_random_string(100)).encode()
             ).digest()
 
             url_safe_hash = base64.urlsafe_b64encode(hash_bytes).decode().rstrip("=")
 
             short_hash = url_safe_hash[:32]
 
-            self.thumbnail.name = f'thumbnails/{short_hash}{ext}'
+            self.thumbnail.name = f'{short_hash}{ext}'
 
         super().save(*args, **kwargs)
 
