@@ -236,3 +236,7 @@ if not GOOGLE_OAUTH_CLIENT_ID:
 # We need these lines below to allow the Google sign in popup to work.
 SECURE_REFERRER_POLICY = 'no-referrer-when-downgrade'
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join('/usr/share/nginx/html/', 'media')
