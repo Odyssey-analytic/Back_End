@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.db.models import Q, F, CheckConstraint
 from django.contrib.postgres.fields import ArrayField
+import os, hashlib, base64
+from django.utils.crypto import get_random_string
 
 max_name_length = 300
 
@@ -16,6 +18,24 @@ class Product(models.Model):
     description = models.TextField(max_length=500, blank=True, null=True)
     thumbnail = models.ImageField(upload_to='thumbnails/', blank=True, null=True)
     owner = models.ForeignKey(CustomUser, related_name='products', on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        if self.thumbnail and not self.thumbnail.name.startswith('thumbnails/'):
+            ext = os.path.splitext(self.thumbnail.name)[1]
+
+            hash_bytes = hashlib.sha256(
+                (self.thumbnail.name + get_random_string()).encode()
+            ).digest()
+
+            url_safe_hash = base64.urlsafe_b64encode(hash_bytes).decode().rstrip("=")
+
+            short_hash = url_safe_hash[:32]
+
+            self.thumbnail.name = f'thumbnails/{short_hash}{ext}'
+
+        super().save(*args, **kwargs)
+
+
 
 class Game(Product):
 
