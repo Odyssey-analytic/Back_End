@@ -59,9 +59,17 @@ class AuthReceiverAPIView(APIView):
         except CustomUser.DoesNotExist:
             None
         
+        message = "User loged in successfully."
         if not user:
-            print("No user like this")
-            return Response({"error": "User does not exist with the email."}, status=status.HTTP_404_NOT_FOUND)
+            data = {"username": user_email, "email": user_email, "password": token, 'confirm_password': token}
+            serializer = CustomUserSignUpSerializer(data=data)
+            if serializer.is_valid():
+                user = serializer.save()
+                print(serializer.errors)
+                message = "User object created successfully!"
+            else:
+                print(serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         is_first_login = user.is_first_login
         if is_first_login:
@@ -76,6 +84,7 @@ class AuthReceiverAPIView(APIView):
             'username': user.username,
             'email': user.email,
             'is_first_login': is_first_login,
+            'message': message,
             
         }, status=status.HTTP_200_OK)
 
