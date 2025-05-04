@@ -61,8 +61,15 @@ class AuthReceiverAPIView(APIView):
         
         message = "User loged in successfully."
         if not user:
-            user = CustomUser.objects.create(email=user_email, username=user_email, password=token)
-            message = "User object created successfully!"
+            data = {"username": user_email, "email": user_email, "password": token, 'confirm_password': token}
+            serializer = CustomUserSignUpSerializer(data=data)
+            if serializer.is_valid():
+                user = serializer.save()
+                print(serializer.errors)
+                message = "User object created successfully!"
+            else:
+                print(serializer.errors)
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         is_first_login = user.is_first_login
         if is_first_login:
