@@ -239,4 +239,6 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
 
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join('/usr/share/nginx/html/', 'media')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+print(MEDIA_ROOT)
