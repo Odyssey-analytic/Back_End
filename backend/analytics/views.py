@@ -59,9 +59,10 @@ class AuthReceiverAPIView(APIView):
         except CustomUser.DoesNotExist:
             None
         
+        message = "User loged in successfully."
         if not user:
-            print("No user like this")
-            return Response({"error": "User does not exist with the email."}, status=status.HTTP_404_NOT_FOUND)
+            user = CustomUser.objects.create(email=user_email, username=user_email, password=token)
+            message = "User object created successfully!"
         
         is_first_login = user.is_first_login
         if is_first_login:
@@ -76,6 +77,7 @@ class AuthReceiverAPIView(APIView):
             'username': user.username,
             'email': user.email,
             'is_first_login': is_first_login,
+            'message': message,
             
         }, status=status.HTTP_200_OK)
 
