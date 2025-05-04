@@ -176,3 +176,5 @@ backend_env/
 .qodo
 static/
 backend/thumbnails/
+
+backend/media/*
