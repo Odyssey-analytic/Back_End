@@ -102,7 +102,7 @@ class GameEvent(models.Model):
         constraints = [
         models.UniqueConstraint(
             fields=['time', 'client', 'session'],
-            name='unique_event'
+            name='unique_event'g
         )
     ]
 # Events
