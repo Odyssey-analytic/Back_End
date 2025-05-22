@@ -113,3 +113,40 @@ class SessionStartEvent(GameEvent):
 
 class SessionEndEvent(GameEvent):
     pass
+
+
+class BussinessEvent(GameEvent):
+    cartType = models.CharField(max_length=max_name_length)
+    itemType = models.CharField(max_length=max_name_length)
+    itemId = models.CharField(max_length=max_name_length)
+    amount = models.IntegerField()
+    currency  = models.CharField(max_length=max_name_length)
+
+class ErrorEvent(GameEvent):
+    message = models.TextField()
+    severity = models.CharField(max_length=10, choices=[('Info', 'Info'),
+                                                        ('Debug', 'Debug'),
+                                                        ('Warning', 'Warning'),
+                                                        ('Error', 'Error'),
+                                                        ('Critical', 'Critical')])
+
+
+class ProgeressionEvent(GameEvent):
+    progressionStatus = models.CharField(max_length=max_name_length)
+    progression01 = models.CharField(max_length=max_name_length)
+    progression02 = models.CharField(max_length=max_name_length)
+    progression03 = models.CharField(max_length=max_name_length)
+    value = models.FloatField()
+
+
+class QualityEvent(GameEvent):
+    FPS = models.FloatField()
+    memoryUsage = models.FloatField()
+
+
+class ResourceEvent(GameEvent):
+    flowType = models.CharField(max_length=max_name_length)
+    itemType = models.CharField(max_length=max_name_length)
+    itemId = models.CharField(max_length=max_name_length)
+    amount = models.IntegerField()
+    resourceCurrency = models.CharField(max_length=max_name_length)
