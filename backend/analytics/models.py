@@ -99,17 +99,14 @@ class GameEvent(models.Model):
     session = models.ForeignKey(Session, related_name="events", on_delete=models.CASCADE)
     
     class Meta:
-        constraints = [
-        models.UniqueConstraint(
-            fields=['time', 'client', 'session'],
-            name='unique_event'g
-        )
-    ]
+        managed = False
+        db_table = 'gameevent'
 # Events
 
-class SessionStartEvent(GameEvent):
+class SessionStartEvent(models.Model):
+    game_event = models.IntegerField()
     platform = models.TextField(max_length=100, null=False)
     
 
-class SessionEndEvent(GameEvent):
-    pass
+class SessionEndEvent(models.Model):
+    game_event = models.IntegerField()

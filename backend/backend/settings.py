@@ -152,11 +152,16 @@ STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-RABBITMQ_API_PORT = os.getenv('RABBITMQ_API_PORT')
-RABBITMQ_API_UI_PORT = os.getenv('RABBITMQ_API_UI_PORT')
+if DEBUG:
+    RABBITMQ_API_PORT = "5672"
+    RABBITMQ_API_UI_PORT = "15672"
+    RABBITMQ_VHOST = "analytic"
+else:
+    RABBITMQ_VHOST = os.getenv("RABBITMQ_VHOST")
+    RABBITMQ_API_PORT = os.getenv('RABBITMQ_API_PORT')
+    RABBITMQ_API_UI_PORT = os.getenv('RABBITMQ_API_UI_PORT')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-RABBITMQ_VHOST = os.getenv("RABBITMQ_VHOST")
 CELERY_BROKER_URL = f'amqp://guest:guest@{RABBITMQ_URL}:{RABBITMQ_API_PORT}/{RABBITMQ_VHOST}'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -217,9 +222,6 @@ EMAIL_HOST_USER = 'oddysey.analytics@gmail.com'
 EMAIL_HOST_PASSWORD = 'cwle pfvr uhqc ezde'
 
 STATIC_ROOT = os.getcwd() + "/static"
-
-RABBITMQ_API_PORT = os.getenv('RABBITMQ_API_PORT')
-RABBITMQ_API_UI_PORT = os.getenv('RABBITMQ_API_UI_PORT')
 
 RABBITMQ_API_URL = f"http://{RABBITMQ_URL}:{RABBITMQ_API_UI_PORT}/api"
 ADMIN_USER = "guest"
