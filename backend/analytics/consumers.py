@@ -7,8 +7,12 @@ from channels.layers import get_channel_layer
 from datetime import datetime, timezone
 from datetime import timedelta
 from urllib.parse import parse_qs
+from django.utils.dateparse import parse_datetime
+from django.db.models import Min, Max
+from django.utils.timezone import make_aware
 
-from analytics.models import Token, Session
+
+from analytics.models import Token, Session, GameEventHourlyCount
 
 
 
@@ -172,3 +176,140 @@ class AverageSessionLength_Monitor(AsyncHttpConsumer):
         message = event["text"]
         await self.send_body(f"data: {message}\n\n".encode(), more_body=True)
 
+
+class GameEventSSEConsumer(AsyncHttpConsumer):
+    async def handle(self, body):
+        query_string = self.scope.get('query_string', b'').decode()
+        params = dict(pair.split('=') for pair in query_string.split('&') if '=' in pair)
+
+        product_id = params.get('product_id')
+        start_time = params.get('start_time') 
+        end_time = params.get('end_time')
+        update_interval = float(params.get('update_interval', 5))
+
+        if not product_id:
+            await self.send_response(400, b'product_id parameter is required')
+            return
+
+        def parse_dt(dt_str):
+            if not dt_str:
+                return None
+            dt = parse_datetime(dt_str)
+
+            if dt and not dt.tzinfo:
+                dt = make_aware(dt)
+            return dt
+
+        start_dt = parse_dt(start_time)
+        end_dt = parse_dt(end_time)
+
+        if start_dt is None:
+            min_bucket = await sync_to_async(
+                lambda: GameEventHourlyCount.objects.aggregate(Min('bucket'))
+            )()
+
+            start_dt = min_bucket['bucket__min']
+        if end_dt is None:
+            max_bucket = await sync_to_async(
+                lambda: GameEventHourlyCount.objects.aggregate(Max('bucket'))
+            )()
+
+            end_dt = max_bucket['bucket__max']
+
+        if start_dt is None or end_dt is None:
+            await self.send_response(404, b'No data available')
+            return
+
+        try:
+            product_id = int(product_id)
+        except ValueError:
+            await self.send_response(400, b'Invalid product_id')
+            return
+
+        @sync_to_async
+        def get_queryset():
+            return list(GameEventHourlyCount.objects.filter(
+            product_id=product_id,
+            bucket__gte=start_dt,
+            bucket__lte=end_dt).order_by('bucket'))
+
+
+
+        qs = await get_queryset()
+
+        headers = [
+            (b"Cache-Control", b"no-cache"),
+            (b"Content-Type", b"text/event-stream"),
+            (b"Transfer-Encoding", b"chunked"),
+            (b'Access-Control-Allow-Origin', b'http://localhost:5173'),
+            (b'Access-Control-Allow-Credentials', b'true')
+        ]
+        await self.send_headers(headers=headers)
+
+        async def send_sse(data_dict):
+            msg = f"data: {json.dumps(data_dict)}\n\n"
+            await self.send_body(msg.encode(), more_body=True)
+
+        initial_data = []
+        for event in qs:
+            initial_data.append({
+                "bucket": event.bucket.isoformat(),
+                "product_id": event.product_id,
+                "event_count": event.event_count,
+            })
+
+        try:
+            await send_sse(initial_data)
+        except Exception:
+            return
+
+        last_sent_time = end_dt
+        last_sent_event_count = None
+
+        while True:
+            await asyncio.sleep(update_interval)
+
+            # Include the last_sent_time to detect updates to that row
+            new_events_qs = await sync_to_async(lambda: GameEventHourlyCount.objects.filter(
+                product_id=product_id,
+                bucket__gte=last_sent_time
+            ).order_by('bucket'))()
+
+            new_events = await sync_to_async(list)(new_events_qs)
+
+            if not new_events:
+                continue
+
+            # If the first event is the last bucket again, check if it was updated
+            first_event = new_events[0]
+            if first_event.bucket == last_sent_time:
+                if first_event.event_count != last_sent_event_count:
+                    # Re-send updated last row
+                    try:
+                        await send_sse({
+                            "bucket": first_event.bucket.isoformat(),
+                            "product_id": first_event.product_id,
+                            "event_count": first_event.event_count,
+                        })
+                    except Exception:
+                        return  # Client disconnected
+                    last_sent_event_count = first_event.event_count
+
+                # Skip to the rest of the new events (if any)
+                remaining_events = new_events[1:]
+            else:
+                remaining_events = new_events
+
+            for event in remaining_events:
+                try:
+                    await send_sse({
+                        "bucket": event.bucket.isoformat(),
+                        "product_id": event.product_id,
+                        "event_count": event.event_count,
+                    })
+                except Exception:
+                    return  # Client disconnected
+
+                # Update tracker with latest
+                last_sent_time = event.bucket
+                last_sent_event_count = event.event_count
