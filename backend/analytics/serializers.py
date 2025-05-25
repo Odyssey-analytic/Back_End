@@ -1,10 +1,11 @@
 from rest_framework import serializers
-from .models import CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Client, Game
+from .models import CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Client, Game, BussinessEvent, ErrorEvent, ProgeressionEvent, QualityEvent, ResourceEvent
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import authenticate
 from analytics.services.managers.QueueManager import RabbitAccountManager
 from django.db.models import Q
+from django.db import connection
 
 class CustomUserSignUpSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -90,37 +91,119 @@ class GameSerializer(serializers.ModelSerializer):
 
 
 class GameEventSerializer(serializers.ModelSerializer):
-    client_id = serializers.PrimaryKeyRelatedField(
-        queryset=Client.objects.all(),
-        source='client',
-        write_only=True
-    )
-    session_id = serializers.PrimaryKeyRelatedField(
-        queryset=Session.objects.all(),
-        source='session',
-        write_only=True
-    )
-    
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all())
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all())
+
     class Meta:
         model = GameEvent
-        fields = ['time', 'client', 'session']
-        validators = [
-            UniqueTogetherValidator(
-                queryset=GameEvent.objects.all(),
-                fields=['time', 'client', 'session'],
-                message="This combination of time, client and session already exists."
+        fields = ['id', 'time', 'client', 'session']
+        read_only_fields = ['id'] 
+
+    def create(self, validated_data):
+        with connection.cursor() as cursor:
+
+            print(f'''
+                INSERT INTO gameevent (time, client_id, session_id)
+                VALUES ({validated_data['time']}, {validated_data['client'].id}, {validated_data['session'].id})
+                RETURNING id
+                ''',
             )
-        ]
 
-class SessionStartEventSerializer(GameEventSerializer):
-    class Meta(GameEventSerializer.Meta):
+            cursor.execute(
+                '''
+                INSERT INTO gameevent (time, client_id, session_id)
+                VALUES (%s, %s, %s)
+                RETURNING id
+                ''',
+                [validated_data['time'], validated_data['client'].id, validated_data['session'].id]
+            )
+            row = cursor.fetchone()
+        validated_data['id'] = row[0]
+        id_ = validated_data.pop('id')
+        return GameEvent(id=id_, **validated_data)
+
+
+class SessionStartEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+
+    class Meta:
         model = SessionStartEvent
-        fields = GameEventSerializer.Meta.fields + ['platform']
+        fields = ['id', 'game_event', 'platform', 'client', 'session', 'time']
+        read_only_fields = ['game_event']
+
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        platform = validated_data.pop('platform')
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time
+            })
+        if game_event_serializer.is_valid():
+                game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"gameevent serializer not valid")
         
+        session_start_event = SessionStartEvent.objects.create(
+            game_event=game_event.id,
+            platform=platform
+        )
+        return session_start_event
 
-class SessionEndEventSerializer(GameEventSerializer):
+
+
+class BussinessEventSerializer(GameEventSerializer):
     class Meta(GameEventSerializer.Meta):
+        model = BussinessEvent
+        fields = GameEventSerializer.Meta.fields + ['cartType', 'itemType', 'itemId', 'amount', 'currency']
+
+
+class ErrorEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = ErrorEvent
+        fields = GameEventSerializer.Meta.fields + ['message', 'severity']
+
+
+class ProgeressionEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = ProgeressionEvent
+        fields = GameEventSerializer.Meta.fields + ['progressionStatus', 'progression01', 'progression02', 'progression03', 'value']
+
+
+class QualityEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = QualityEvent
+        fields = GameEventSerializer.Meta.fields + ['FPS', 'memoryUsage']
+
+
+class ResourceEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = ResourceEvent
+        fields = GameEventSerializer.Meta.fields + ['flowType', 'itemType', 'itemId', 'amount', 'resourceCurrency']
+
+class SessionEndEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+
+    class Meta:
         model = SessionEndEvent
-        fields = GameEventSerializer.Meta.fields
+        fields = ['id', 'game_event', 'client', 'session', 'time']
+        read_only_fields = ['game_event']
 
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
 
+        game_event = GameEvent.objects.create(client=client, session=session, time=time)
+        session_end_event = SessionEndEvent.objects.create(
+            game_event=game_event.id,
+        )
+        return session_end_event
