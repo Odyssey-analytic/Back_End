@@ -97,19 +97,29 @@ class GameEvent(models.Model):
     time = models.DateTimeField()
     client = models.ForeignKey(Client, related_name="events", on_delete=models.CASCADE)
     session = models.ForeignKey(Session, related_name="events", on_delete=models.CASCADE)
-    
+    product = models.ForeignKey(Product, related_name="events", on_delete=models.CASCADE)
+
     class Meta:
-        constraints = [
-        models.UniqueConstraint(
-            fields=['time', 'client', 'session'],
-            name='unique_event'
-        )
-    ]
+        managed = False
+        db_table = 'gameevent'
 # Events
 
-class SessionStartEvent(GameEvent):
+class SessionStartEvent(models.Model):
+    game_event = models.IntegerField()
     platform = models.TextField(max_length=100, null=False)
     
 
-class SessionEndEvent(GameEvent):
-    pass
+class SessionEndEvent(models.Model):
+    game_event = models.IntegerField()
+
+
+# Materialized Views
+
+class GameEventHourlyCount(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    event_count = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'gameeventcount_hourly'

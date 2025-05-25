@@ -132,7 +132,8 @@ class RabbitAccountManager:
     def add_queue(username, VHOST, queue_name: str, queue_type: queue_type):
         queue_name = f"{username}.{VHOST}.{queue_name}.{queue_type.name}"  
         #queue_name = secure_hash_base64(queue_name)
-
+        print(f"{settings.RABBITMQ_API_URL}/queues/{settings.RABBITMQ_VHOST}/{queue_name}")
+        print(settings.ADMIN_USER, settings.ADMIN_PASS)
         create_queue_response = requests.put(
             f"{settings.RABBITMQ_API_URL}/queues/{settings.RABBITMQ_VHOST}/{queue_name}",
             auth=HTTPBasicAuth(settings.ADMIN_USER, settings.ADMIN_PASS),
