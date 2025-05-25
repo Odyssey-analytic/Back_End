@@ -13,11 +13,10 @@ CREATE TABLE gameevent (
     id SERIAL,
     time TIMESTAMPTZ,
     client_id INTEGER REFERENCES analytics_client(id),
-    session_id INTEGER REFERENCES analytics_session(id)
+    session_id INTEGER REFERENCES analytics_session(id),
+    product_id INTEGER REFERENCES analytics_product(id)
 );
-CREATE UNIQUE INDEX idx_time_id_client_session
-  ON gameevent(time, client_id, session_id);
-SELECT create_hypertable('gameevent', 'time');
+SELECT create_hypertable('gameevent', 'time', 'product_id', number_partitions => 32);
 """
 
 
