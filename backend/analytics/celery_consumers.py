@@ -45,7 +45,7 @@ class StartSessionEvent(bootsteps.ConsumerStep):
 
             client_obj = Client.objects.get(id=data["client"])
             token_obj = client_obj.token
-
+            product_obj = token_obj.Product
 
             session_obj = Session.objects.create(
                 id=session_id,
@@ -59,6 +59,8 @@ class StartSessionEvent(bootsteps.ConsumerStep):
 
 
             data['session'] = session_obj.id
+
+            data['product'] = product_obj.id
 
             serializer = SessionStartEventSerializer(data=data)
             if serializer.is_valid():
