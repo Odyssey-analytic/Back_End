@@ -171,8 +171,8 @@ class BussinessEventSerializer(serializers.ModelSerializer):
 
     class Meta(GameEventSerializer.Meta):
         model = BussinessEvent
-        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['cartType', 'itemType', 'itemId',
-                                                                                 'amount', 'currency']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['cartType', 'itemType', 'itemId','amount', 'currency']
+        read_only_fields = ['game_event']                                                                        
 
     def create(self, validated_data):
         client = validated_data.pop('client')
@@ -209,9 +209,15 @@ class BussinessEventSerializer(serializers.ModelSerializer):
 
 
 class ErrorEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
     class Meta(GameEventSerializer.Meta):
         model = ErrorEvent
         fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['message', 'severity']
+        read_only_fields = ['game_event']
 
     def create(self, validated_data):
         client = validated_data.pop('client')
@@ -242,11 +248,17 @@ class ErrorEventSerializer(serializers.ModelSerializer):
 
 
 class ProgeressionEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
+    
     class Meta(GameEventSerializer.Meta):
         model = ProgeressionEvent
-        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['progressionStatus', 'progression01',
-                                                                                 'progression02', 'progression03',
-                                                                                 'value']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['progressionStatus', 'progression01','progression02', 'progression03', 'value']
+        read_only_fields = ['game_event']                                                                       
+                                                                                
 
     def create(self, validated_data):
         client = validated_data.pop('client')
@@ -283,10 +295,17 @@ class ProgeressionEventSerializer(serializers.ModelSerializer):
 
 
 class QualityEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
+    
     class Meta(GameEventSerializer.Meta):
         model = QualityEvent
         fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['FPS', 'memoryUsage']
-
+        read_only_fields = ['game_event']
+        
     def create(self, validated_data):
         client = validated_data.pop('client')
         session = validated_data.pop('session')
@@ -316,10 +335,16 @@ class QualityEventSerializer(serializers.ModelSerializer):
 
 
 class ResourceEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
+    
     class Meta(GameEventSerializer.Meta):
         model = ResourceEvent
         fields = GameEventSerializer.Meta.fields + ['flowType', 'itemType', 'itemId', 'amount', 'resourceCurrency']
-
+        read_only_fields = ['game_event']
 
 class SessionEndEventSerializer(serializers.ModelSerializer):
     client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)

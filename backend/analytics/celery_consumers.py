@@ -98,7 +98,7 @@ class EndSessionEvent(bootsteps.ConsumerStep):
                 session = Session.objects.get(id=session_id)
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
-
+            
             session.end_time = end_time
             session.save()
             print(f"Session {session_id} end_time updated to {end_time}")
@@ -142,6 +142,9 @@ class BussinessEventAction(bootsteps.ConsumerStep):
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
 
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
             serializer = BussinessEventSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -179,6 +182,10 @@ class ErrorEventAction(bootsteps.ConsumerStep):
                 session = Session.objects.get(id=session_id)
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
+
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
 
             serializer = ErrorEventSerializer(data=data)
             if serializer.is_valid():
@@ -218,6 +225,9 @@ class ProgeressionEventAction(bootsteps.ConsumerStep):
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
 
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
             serializer = ProgeressionEventSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -256,6 +266,9 @@ class QualityEventAction(bootsteps.ConsumerStep):
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
 
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
             serializer = QualityEventSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -293,6 +306,9 @@ class ResourceEventAction(bootsteps.ConsumerStep):
                 session = Session.objects.get(id=session_id)
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
+
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
 
             serializer = ResourceEventSerializer(data=data)
             if serializer.is_valid():
