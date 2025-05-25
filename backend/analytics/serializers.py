@@ -161,31 +161,153 @@ class SessionStartEventSerializer(serializers.ModelSerializer):
 
 
 
-class BussinessEventSerializer(GameEventSerializer):
+class BussinessEventSerializer(serializers.ModelSerializer):
     class Meta(GameEventSerializer.Meta):
         model = BussinessEvent
-        fields = GameEventSerializer.Meta.fields + ['cartType', 'itemType', 'itemId', 'amount', 'currency']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['cartType', 'itemType', 'itemId', 'amount', 'currency']
 
 
-class ErrorEventSerializer(GameEventSerializer):
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        cartType = validated_data.pop('cartType')
+        itemType = validated_data.pop('itemType')
+        itemId = validated_data.pop('itemId')
+        amount = validated_data.pop('amount')
+        currency = validated_data.pop('currency')
+
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+                game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"gameevent serializer not valid")
+        
+        business_event = BussinessEvent.objects.create(
+            game_event=game_event.id,
+            cartType=cartType,
+            itemType=itemType,
+            itemId=itemId,
+            amount=amount,
+            currency=currency
+        )
+        return business_event
+
+
+
+class ErrorEventSerializer(serializers.ModelSerializer):
     class Meta(GameEventSerializer.Meta):
         model = ErrorEvent
-        fields = GameEventSerializer.Meta.fields + ['message', 'severity']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['message', 'severity']
+
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        message = validated_data.pop('message')
+        severity = validated_data.pop('severity')
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+                game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"ErrorEvent serializer not valid")
+        
+        business_event = ErrorEvent.objects.create(
+            game_event=game_event.id,
+            message=message,
+            severity=severity
+        )
+        return business_event
 
 
-class ProgeressionEventSerializer(GameEventSerializer):
+
+class ProgeressionEventSerializer(serializers.ModelSerializer):
     class Meta(GameEventSerializer.Meta):
         model = ProgeressionEvent
-        fields = GameEventSerializer.Meta.fields + ['progressionStatus', 'progression01', 'progression02', 'progression03', 'value']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['progressionStatus', 'progression01', 'progression02', 'progression03', 'value']
 
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        progressionStatus = validated_data.pop('progressionStatus')
+        progression01 = validated_data.pop('progression01')
+        progression02 = validated_data.pop('progression02')
+        progression03 = validated_data.pop('progression03')
+        value = validated_data.pop('value')
 
-class QualityEventSerializer(GameEventSerializer):
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+                game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"ProgeressionEvent serializer not valid")
+        
+        business_event = ProgeressionEvent.objects.create(
+            game_event=game_event.id,
+            progressionStatus=progressionStatus,
+            progression01=progression01,
+            progression02=progression02,
+            progression03=progression03,
+            value=value
+        )
+        return business_event
+
+class QualityEventSerializer(serializers.ModelSerializer):
     class Meta(GameEventSerializer.Meta):
         model = QualityEvent
-        fields = GameEventSerializer.Meta.fields + ['FPS', 'memoryUsage']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['FPS', 'memoryUsage']
+    
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        FPS = validated_data.pop('FPS')
+        memoryUsage = validated_data.pop('memoryUsage')
 
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+                game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"QualityEvent serializer not valid")
+        
+        business_event = QualityEvent.objects.create(
+            game_event=game_event.id,
+            FPS=FPS,
+            memoryUsage=memoryUsage
+        )
+        return business_event
 
-class ResourceEventSerializer(GameEventSerializer):
+class ResourceEventSerializer(serializers.ModelSerializer):
     class Meta(GameEventSerializer.Meta):
         model = ResourceEvent
         fields = GameEventSerializer.Meta.fields + ['flowType', 'itemType', 'itemId', 'amount', 'resourceCurrency']
@@ -209,3 +331,4 @@ class SessionEndEventSerializer(serializers.ModelSerializer):
         session_end_event = SessionEndEvent.objects.create(
             game_event=game_event.id,
         )
+        return session_end_event

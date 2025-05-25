@@ -217,6 +217,26 @@ class GameView(APIView):
                         {
                             "queue_name": "end_session",
                             "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "business_event",
+                            "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "error_event",
+                            "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "progression_event",
+                            "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "quality_event",
+                            "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "resource_event",
+                            "queue_type": "SINGLE_VALUE"
                         }
                     ]   
                 )

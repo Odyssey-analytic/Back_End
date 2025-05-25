@@ -120,7 +120,7 @@ class EndSessionEvent(bootsteps.ConsumerStep):
 class BussinessEventAction(bootsteps.ConsumerStep):
     name = 'BussinessEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'bussiness')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'business_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -158,7 +158,7 @@ class BussinessEventAction(bootsteps.ConsumerStep):
 class ErrorEventAction(bootsteps.ConsumerStep):
     name = 'ErrorEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'error')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'error_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -196,7 +196,7 @@ class ErrorEventAction(bootsteps.ConsumerStep):
 class ProgeressionEventAction(bootsteps.ConsumerStep):
     name = 'ProgeressionEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'progeression')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'progeression_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -234,7 +234,7 @@ class ProgeressionEventAction(bootsteps.ConsumerStep):
 class QualityEventAction(bootsteps.ConsumerStep):
     name = 'QualityEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'quality')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'quality_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -272,7 +272,7 @@ class QualityEventAction(bootsteps.ConsumerStep):
 class ResourceEventAction(bootsteps.ConsumerStep):
     name = 'ResourceEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'resource')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'resource_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
