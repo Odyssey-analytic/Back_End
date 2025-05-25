@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Client, Game
+from .models import CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Client, Game, BussinessEvent, ErrorEvent, ProgeressionEvent, QualityEvent, ResourceEvent
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import authenticate
@@ -157,6 +157,35 @@ class SessionStartEventSerializer(serializers.ModelSerializer):
         return session_start_event
 
 
+
+class BussinessEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = BussinessEvent
+        fields = GameEventSerializer.Meta.fields + ['cartType', 'itemType', 'itemId', 'amount', 'currency']
+
+
+class ErrorEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = ErrorEvent
+        fields = GameEventSerializer.Meta.fields + ['message', 'severity']
+
+
+class ProgeressionEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = ProgeressionEvent
+        fields = GameEventSerializer.Meta.fields + ['progressionStatus', 'progression01', 'progression02', 'progression03', 'value']
+
+
+class QualityEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = QualityEvent
+        fields = GameEventSerializer.Meta.fields + ['FPS', 'memoryUsage']
+
+
+class ResourceEventSerializer(GameEventSerializer):
+    class Meta(GameEventSerializer.Meta):
+        model = ResourceEvent
+        fields = GameEventSerializer.Meta.fields + ['flowType', 'itemType', 'itemId', 'amount', 'resourceCurrency']
 
 class SessionEndEventSerializer(serializers.ModelSerializer):
     client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
