@@ -386,23 +386,35 @@ class CustomEventQueryView(APIView):
         else:
             raise ValueError("Invalid aggregate type. Must be one of: sum, count, average, max, min")
 
-    def post(self, request):
+    def get(self, request):
         try:
-            custom_field1 = request.data.get('custom_field1', '*')
-            custom_field2 = request.data.get('custom_field2', '*')
-            custom_field3 = request.data.get('custom_field3', '*')
-            custom_field4 = request.data.get('custom_field4', '*')
-            custom_field5 = request.data.get('custom_field5', '*')
-            aggregate_type = request.data.get('aggregate_type')
-            bucket = request.data.get('bucket')
-            start_time = parse_datetime(request.data.get('starttime'))
-            end_time = parse_datetime(request.data.get('endtime'))
+            custom_field1 = request.query_params.get('custom_field1', '*')
+            custom_field2 = request.query_params.get('custom_field2', '*')
+            custom_field3 = request.query_params.get('custom_field3', '*')
+            custom_field4 = request.query_params.get('custom_field4', '*')
+            custom_field5 = request.query_params.get('custom_field5', '*')
+            aggregate_type = request.query_params.get('aggregate_type')
+            bucket = request.query_params.get('bucket')
+            start_time = parse_datetime(request.query_params.get('starttime'))
+            end_time = parse_datetime(request.query_params.get('endtime'))
 
             if not all([aggregate_type, bucket, start_time, end_time]):
                 return Response({
                     'status': 'error',
                     'message': 'Missing required parameters'
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate that wildcards only appear after non-wildcards
+            fields = [custom_field1, custom_field2, custom_field3, custom_field4, custom_field5]
+            found_wildcard = False
+            for i, field in enumerate(fields):
+                if field == '*':
+                    found_wildcard = True
+                elif found_wildcard:
+                    return Response({
+                        'status': 'error',
+                        'message': 'Invalid field pattern - wildcards must be at the end'
+                    }, status=status.HTTP_400_BAD_REQUEST)
 
             query = CustomEvent.objects.filter(
                 game_event__in=GameEvent.objects.filter(
