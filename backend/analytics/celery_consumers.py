@@ -4,7 +4,7 @@ from kombu import Consumer, Exchange, Queue
 import sys, json
 
 from analytics.models import Token, Client, Session
-from analytics.serializers import SessionStartEventSerializer, SessionEndEventSerializer, BussinessEventSerializer, ErrorEventSerializer, ProgeressionEventSerializer, QualityEventSerializer, ResourceEventSerializer
+from analytics.serializers import SessionStartEventSerializer, SessionEndEventSerializer, BussinessEventSerializer, ErrorEventSerializer, ProgeressionEventSerializer, QualityEventSerializer, ResourceEventSerializer, CustomEventSerializer
 from analytics.services.QueueCollection import QueueCollection
 from analytics.services.Utilities import send_update_to_group
 from django.utils.dateparse import parse_datetime
@@ -318,6 +318,47 @@ class ResourceEventAction(bootsteps.ConsumerStep):
                 print(serializer.errors)
 
             print(f"Resource Event: {body} digested")
+            message.ack()
+        except Exception as e:
+            print(f"error occurred for message {body}: {e}")
+
+
+class CustomEventAction(bootsteps.ConsumerStep):
+    name = 'CustomEventAction' 
+    def get_consumers(self, channel):
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'custom_event')
+        return [Consumer(channel,
+                         queues=filtered_queues,
+                         callbacks=[self.handle_message],
+                         accept=['json'])]
+
+    def handle_message(self, body, message):
+        try:
+            print(f'Received Custom Event message: {body}')
+            data = json.loads(body)
+
+            session_id = data["session"]
+
+            if not session_id:
+                raise ValueError("Missing required field: 'session_id'.")
+
+            session = None
+            try:
+                session = Session.objects.get(id=session_id)
+            except Session.DoesNotExist:
+                raise ValueError(f"Session with id '{session_id}' not found.")
+
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
+            serializer = CustomEventSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+            else:
+                print("serializer is not valid")
+                print(serializer.errors)
+
+            print(f"Custom Event: {body} digested")
             message.ack()
         except Exception as e:
             print(f"error occurred for message {body}: {e}")
