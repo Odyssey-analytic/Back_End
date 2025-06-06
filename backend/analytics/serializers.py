@@ -375,7 +375,7 @@ class CustomEventSerializer(serializers.ModelSerializer):
     
     class Meta(GameEventSerializer.Meta):
         model = CustomEvent
-        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['custom_field1', 'custom_field2', 'custom_field3', 'custom_field4', 'custom_field5']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['custom_field1', 'custom_field2', 'custom_field3', 'custom_field4', 'custom_field5', 'float_value']
         read_only_fields = ['game_event']
 
     def create(self, validated_data):
@@ -388,6 +388,7 @@ class CustomEventSerializer(serializers.ModelSerializer):
         custom_field3 = validated_data.pop('custom_field3')
         custom_field4 = validated_data.pop('custom_field4')
         custom_field5 = validated_data.pop('custom_field5')
+        float_value = validated_data.pop('float_value', None)  # Make it optional
 
         game_event_serializer = GameEventSerializer(
             data={
@@ -407,6 +408,7 @@ class CustomEventSerializer(serializers.ModelSerializer):
             custom_field2=custom_field2,
             custom_field3=custom_field3,
             custom_field4=custom_field4,
-            custom_field5=custom_field5
+            custom_field5=custom_field5,
+            float_value=float_value
         )
         return custom_event

@@ -10,4 +10,5 @@ urlpatterns = [
     path('reset-password/<token>/', PasswordResetConfirmView.as_view(), name='reset_password_confirm'),
     path('sign_in/', SignInAPIView.as_view(), name='sign_in'),
     path('auth-receiver', AuthReceiverAPIView.as_view(), name='auth_receiver'),
+    path('custom-events/query/', CustomEventQueryView.as_view(), name='custom-events-query'),
 ]

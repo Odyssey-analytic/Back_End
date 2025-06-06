@@ -111,6 +111,7 @@ class CustomEvent(models.Model):
     custom_field3 = models.TextField(max_length=64)
     custom_field4 = models.TextField(max_length=64)
     custom_field5 = models.TextField(max_length=64)
+    float_value = models.FloatField(null=True, blank=True)
 
 
 
