@@ -150,4 +150,16 @@ class Migration(migrations.Migration):
                 ('game_event', models.IntegerField()),
             ],
         ),
+        migrations.CreateModel(
+            name='CustomEvent',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('game_event', models.IntegerField()),
+                ('custom_field1', models.TextField(max_length=64)),
+                ('custom_field2', models.TextField(max_length=64)),
+                ('custom_field3', models.TextField(max_length=64)),
+                ('custom_field4', models.TextField(max_length=64)),
+                ('custom_field5', models.TextField(max_length=64)),
+            ],
+        ),
     ]

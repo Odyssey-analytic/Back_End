@@ -206,3 +206,4 @@ backend/media/*
 .gentoo_env/bin/uvicorn
 .gentoo_env/bin/watchfiles
 .gentoo_env/bin/websockets
+.backend_env/

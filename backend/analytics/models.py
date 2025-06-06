@@ -104,12 +104,19 @@ class GameEvent(models.Model):
         db_table = 'gameevent'
 # Events
 
+class CustomEvent(models.Model):
+    game_event = models.IntegerField()
+    custom_field1 = models.TextField(max_length=64)
+    custom_field2 = models.TextField(max_length=64)
+    custom_field3 = models.TextField(max_length=64)
+    custom_field4 = models.TextField(max_length=64)
+    custom_field5 = models.TextField(max_length=64)
+
+
+
 class SessionStartEvent(models.Model):
     game_event = models.IntegerField()
     platform = models.TextField(max_length=100, null=False)
-    
-
-
 
 
 class BussinessEvent(models.Model):
