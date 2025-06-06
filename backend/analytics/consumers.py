@@ -177,7 +177,7 @@ class AverageSessionLength_Monitor(AsyncHttpConsumer):
         await self.send_body(f"data: {message}\n\n".encode(), more_body=True)
 
 
-class BaseHourlyCountSSEConsumer(AsyncHttpConsumer):
+class BaseSSEConsumer(AsyncHttpConsumer):
     async def handle(self, body):
         query_string = self.scope.get('query_string', b'').decode()
         params = dict(pair.split('=') for pair in query_string.split('&') if '=' in pair)
@@ -316,7 +316,7 @@ class BaseHourlyCountSSEConsumer(AsyncHttpConsumer):
         raise NotImplementedError("Subclasses must implement get_filtered_queryset()")
 
 
-class GameEventSSEConsumer(BaseHourlyCountSSEConsumer):
+class GameEventSSEConsumer(BaseSSEConsumer):
     def get_model(self):
         return GameEventHourlyCount
 
