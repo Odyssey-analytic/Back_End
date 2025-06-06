@@ -177,7 +177,7 @@ class AverageSessionLength_Monitor(AsyncHttpConsumer):
         await self.send_body(f"data: {message}\n\n".encode(), more_body=True)
 
 
-class GameEventSSEConsumer(AsyncHttpConsumer):
+class BaseHourlyCountSSEConsumer(AsyncHttpConsumer):
     async def handle(self, body):
         query_string = self.scope.get('query_string', b'').decode()
         params = dict(pair.split('=') for pair in query_string.split('&') if '=' in pair)
@@ -205,13 +205,13 @@ class GameEventSSEConsumer(AsyncHttpConsumer):
 
         if start_dt is None:
             min_bucket = await sync_to_async(
-                lambda: GameEventHourlyCount.objects.aggregate(Min('bucket'))
+                lambda: self.get_model().objects.aggregate(Min('bucket'))
             )()
 
             start_dt = min_bucket['bucket__min']
         if end_dt is None:
             max_bucket = await sync_to_async(
-                lambda: GameEventHourlyCount.objects.aggregate(Max('bucket'))
+                lambda: self.get_model().objects.aggregate(Max('bucket'))
             )()
 
             end_dt = max_bucket['bucket__max']
@@ -228,12 +228,7 @@ class GameEventSSEConsumer(AsyncHttpConsumer):
 
         @sync_to_async
         def get_queryset():
-            return list(GameEventHourlyCount.objects.filter(
-            product_id=product_id,
-            bucket__gte=start_dt,
-            bucket__lte=end_dt).order_by('bucket'))
-
-
+            return list(self.get_filtered_queryset(product_id, start_dt, end_dt))
 
         qs = await get_queryset()
 
@@ -270,7 +265,7 @@ class GameEventSSEConsumer(AsyncHttpConsumer):
             await asyncio.sleep(update_interval)
 
             # Include the last_sent_time to detect updates to that row
-            new_events_qs = await sync_to_async(lambda: GameEventHourlyCount.objects.filter(
+            new_events_qs = await sync_to_async(lambda: self.get_model().objects.filter(
                 product_id=product_id,
                 bucket__gte=last_sent_time
             ).order_by('bucket'))()
@@ -313,3 +308,21 @@ class GameEventSSEConsumer(AsyncHttpConsumer):
                 # Update tracker with latest
                 last_sent_time = event.bucket
                 last_sent_event_count = event.event_count
+
+    def get_model(self):
+        raise NotImplementedError("Subclasses must implement get_model()")
+
+    def get_filtered_queryset(self, product_id, start_dt, end_dt):
+        raise NotImplementedError("Subclasses must implement get_filtered_queryset()")
+
+
+class GameEventSSEConsumer(BaseHourlyCountSSEConsumer):
+    def get_model(self):
+        return GameEventHourlyCount
+
+    def get_filtered_queryset(self, product_id, start_dt, end_dt):
+        return GameEventHourlyCount.objects.filter(
+            product_id=product_id,
+            bucket__gte=start_dt,
+            bucket__lte=end_dt
+        ).order_by('bucket')
