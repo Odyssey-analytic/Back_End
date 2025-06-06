@@ -346,6 +346,39 @@ class ResourceEventSerializer(serializers.ModelSerializer):
         fields = GameEventSerializer.Meta.fields + ['flowType', 'itemType', 'itemId', 'amount', 'resourceCurrency']
         read_only_fields = ['game_event']
 
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        flowType = validated_data.pop('flowType')
+        itemType = validated_data.pop('itemType')
+        itemId = validated_data.pop('itemId')
+        amount = validated_data.pop('amount')
+        resourceCurrency = validated_data.pop('resourceCurrency')
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+            game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"QualityEvent serializer not valid")
+
+        business_event = ResourceEvent.objects.create(
+            game_event=game_event.id,
+            flowType=flowType,
+            itemType=itemType,
+            itemId=itemId,
+            amount=amount,
+            resourceCurrency=resourceCurrency
+        )
+        return business_event
+
 class SessionEndEventSerializer(serializers.ModelSerializer):
     client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
     session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)

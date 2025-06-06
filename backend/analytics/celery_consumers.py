@@ -203,7 +203,7 @@ class ErrorEventAction(bootsteps.ConsumerStep):
 class ProgeressionEventAction(bootsteps.ConsumerStep):
     name = 'ProgeressionEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'progeression_event')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'progression_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
