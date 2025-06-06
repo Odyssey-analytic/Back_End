@@ -240,6 +240,10 @@ class GameView(APIView):
                         {
                             "queue_name": "resource_event",
                             "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "custom_event",
+                            "queue_type": "SINGLE_VALUE"
                         }
                     ]   
                 )
