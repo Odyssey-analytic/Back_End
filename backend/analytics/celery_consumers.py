@@ -45,7 +45,7 @@ class StartSessionEvent(bootsteps.ConsumerStep):
 
             client_obj = Client.objects.get(id=data["client"])
             token_obj = client_obj.token
-
+            product_obj = token_obj.Product
 
             session_obj = Session.objects.create(
                 id=session_id,
@@ -59,6 +59,8 @@ class StartSessionEvent(bootsteps.ConsumerStep):
 
 
             data['session'] = session_obj.id
+
+            data['product'] = product_obj.id
 
             serializer = SessionStartEventSerializer(data=data)
             if serializer.is_valid():
@@ -96,7 +98,7 @@ class EndSessionEvent(bootsteps.ConsumerStep):
                 session = Session.objects.get(id=session_id)
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
-
+            
             session.end_time = end_time
             session.save()
             print(f"Session {session_id} end_time updated to {end_time}")
@@ -118,7 +120,7 @@ class EndSessionEvent(bootsteps.ConsumerStep):
 class BussinessEventAction(bootsteps.ConsumerStep):
     name = 'BussinessEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'bussiness')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'business_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -140,6 +142,9 @@ class BussinessEventAction(bootsteps.ConsumerStep):
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
 
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
             serializer = BussinessEventSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -156,7 +161,7 @@ class BussinessEventAction(bootsteps.ConsumerStep):
 class ErrorEventAction(bootsteps.ConsumerStep):
     name = 'ErrorEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'error')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'error_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -178,6 +183,10 @@ class ErrorEventAction(bootsteps.ConsumerStep):
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
 
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
+
             serializer = ErrorEventSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -194,7 +203,7 @@ class ErrorEventAction(bootsteps.ConsumerStep):
 class ProgeressionEventAction(bootsteps.ConsumerStep):
     name = 'ProgeressionEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'progeression')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'progeression_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -216,6 +225,9 @@ class ProgeressionEventAction(bootsteps.ConsumerStep):
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
 
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
             serializer = ProgeressionEventSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -232,7 +244,7 @@ class ProgeressionEventAction(bootsteps.ConsumerStep):
 class QualityEventAction(bootsteps.ConsumerStep):
     name = 'QualityEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'quality')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'quality_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -254,6 +266,9 @@ class QualityEventAction(bootsteps.ConsumerStep):
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
 
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
+
             serializer = QualityEventSerializer(data=data)
             if serializer.is_valid():
                 serializer.save()
@@ -270,7 +285,7 @@ class QualityEventAction(bootsteps.ConsumerStep):
 class ResourceEventAction(bootsteps.ConsumerStep):
     name = 'ResourceEventAction' 
     def get_consumers(self, channel):
-        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'resource')
+        filtered_queues = queue_collection.get_queues(lambda q: get_queue_name(q.name) == 'resource_event')
         return [Consumer(channel,
                          queues=filtered_queues,
                          callbacks=[self.handle_message],
@@ -291,6 +306,9 @@ class ResourceEventAction(bootsteps.ConsumerStep):
                 session = Session.objects.get(id=session_id)
             except Session.DoesNotExist:
                 raise ValueError(f"Session with id '{session_id}' not found.")
+
+            product_obj = session.token.Product
+            data['product'] = product_obj.id
 
             serializer = ResourceEventSerializer(data=data)
             if serializer.is_valid():
