@@ -118,6 +118,7 @@ class BussinessEvent(models.Model):
     itemType = models.CharField(max_length=max_name_length)
     itemId = models.CharField(max_length=max_name_length)
     amount = models.IntegerField()
+    game_event = models.IntegerField()
     currency  = models.CharField(max_length=max_name_length)
 
 class ErrorEvent(models.Model):

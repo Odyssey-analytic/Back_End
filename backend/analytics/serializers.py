@@ -1,11 +1,14 @@
-from rest_framework import serializers
-from .models import CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Client, Game, BussinessEvent, ErrorEvent, ProgeressionEvent, QualityEvent, ResourceEvent
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.validators import UniqueTogetherValidator
 from django.contrib.auth import authenticate
-from analytics.services.managers.QueueManager import RabbitAccountManager
-from django.db.models import Q
 from django.db import connection
+from django.db.models import Q
+from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from analytics.services.managers.QueueManager import RabbitAccountManager
+from .models import CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Product, Client, Game, \
+    BussinessEvent, ErrorEvent, ProgeressionEvent, QualityEvent, ResourceEvent
+
 
 class CustomUserSignUpSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -31,7 +34,7 @@ class CustomUserSignUpSerializer(serializers.ModelSerializer):
 
         user = CustomUser.objects.create_user(**validated_data)
         return user
-    
+
 
 class LoginSerializer(serializers.Serializer):
     identifier = serializers.CharField()
@@ -43,8 +46,8 @@ class LoginSerializer(serializers.Serializer):
 
         query_set = CustomUser.objects.filter(Q(email=identifier) or Q(username=identifier))
         if not len(query_set):
-            raise serializers.ValidationError({"error":"Invalid username/email"})
-        
+            raise serializers.ValidationError({"error": "Invalid username/email"})
+
         user = authenticate(username=identifier, password=password)
 
         if not user:
@@ -56,13 +59,13 @@ class LoginSerializer(serializers.Serializer):
                 user = None
 
         if not user:
-            raise serializers.ValidationError({"error":"Invalid password"})
-        
+            raise serializers.ValidationError({"error": "Invalid password"})
+
         is_first_login = user.is_first_login
         if is_first_login:
             user.is_first_login = False
             user.save()
-    
+
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
         return {
@@ -77,9 +80,9 @@ class LoginSerializer(serializers.Serializer):
 class GameSerializer(serializers.ModelSerializer):
     platform = serializers.ListField(
         child=serializers.ChoiceField(choices=Game.Platform.choices),
-        allow_empty=False 
+        allow_empty=False
     )
-    
+
     class Meta:
         model = Game
         fields = '__all__'
@@ -93,29 +96,29 @@ class GameSerializer(serializers.ModelSerializer):
 class GameEventSerializer(serializers.ModelSerializer):
     client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all())
     session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all())
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all())
 
     class Meta:
         model = GameEvent
-        fields = ['id', 'time', 'client', 'session']
-        read_only_fields = ['id'] 
+        fields = ['id', 'time', 'client', 'session', 'product']
+        read_only_fields = ['id']
 
     def create(self, validated_data):
         with connection.cursor() as cursor:
-
             print(f'''
                 INSERT INTO gameevent (time, client_id, session_id)
                 VALUES ({validated_data['time']}, {validated_data['client'].id}, {validated_data['session'].id})
                 RETURNING id
                 ''',
-            )
+                  )
 
             cursor.execute(
                 '''
-                INSERT INTO gameevent (time, client_id, session_id)
-                VALUES (%s, %s, %s)
-                RETURNING id
+                INSERT INTO gameevent (time, client_id, session_id, product_id)
+                VALUES (%s, %s, %s, %s) RETURNING id
                 ''',
-                [validated_data['time'], validated_data['client'].id, validated_data['session'].id]
+                [validated_data['time'], validated_data['client'].id, validated_data['session'].id,
+                 validated_data['product'].id]
             )
             row = cursor.fetchone()
         validated_data['id'] = row[0]
@@ -126,11 +129,12 @@ class GameEventSerializer(serializers.ModelSerializer):
 class SessionStartEventSerializer(serializers.ModelSerializer):
     client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
     session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
     time = serializers.DateTimeField(write_only=True)
 
     class Meta:
         model = SessionStartEvent
-        fields = ['id', 'game_event', 'platform', 'client', 'session', 'time']
+        fields = ['id', 'game_event', 'platform', 'client', 'session', 'time', 'product']
         read_only_fields = ['game_event']
 
     def create(self, validated_data):
@@ -138,18 +142,20 @@ class SessionStartEventSerializer(serializers.ModelSerializer):
         session = validated_data.pop('session')
         time = validated_data.pop('time')
         platform = validated_data.pop('platform')
+        product = validated_data.pop('product')
 
         game_event_serializer = GameEventSerializer(
             data={
                 'client': client.id,
                 'session': session.id,
-                'time': time
+                'time': time,
+                'product': product.id
             })
         if game_event_serializer.is_valid():
-                game_event = game_event_serializer.save()
+            game_event = game_event_serializer.save()
         else:
             raise Exception(f"gameevent serializer not valid")
-        
+
         session_start_event = SessionStartEvent.objects.create(
             game_event=game_event.id,
             platform=platform
@@ -157,35 +163,188 @@ class SessionStartEventSerializer(serializers.ModelSerializer):
         return session_start_event
 
 
+class BussinessEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
 
-class BussinessEventSerializer(GameEventSerializer):
     class Meta(GameEventSerializer.Meta):
         model = BussinessEvent
-        fields = GameEventSerializer.Meta.fields + ['cartType', 'itemType', 'itemId', 'amount', 'currency']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['cartType', 'itemType', 'itemId','amount', 'currency']
+        read_only_fields = ['game_event']                                                                        
+
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        cartType = validated_data.pop('cartType')
+        itemType = validated_data.pop('itemType')
+        itemId = validated_data.pop('itemId')
+        amount = validated_data.pop('amount')
+        currency = validated_data.pop('currency')
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+            game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"gameevent serializer not valid")
+
+        business_event = BussinessEvent.objects.create(
+            game_event=game_event.id,
+            cartType=cartType,
+            itemType=itemType,
+            itemId=itemId,
+            amount=amount,
+            currency=currency
+        )
+        return business_event
 
 
-class ErrorEventSerializer(GameEventSerializer):
+class ErrorEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
     class Meta(GameEventSerializer.Meta):
         model = ErrorEvent
-        fields = GameEventSerializer.Meta.fields + ['message', 'severity']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['message', 'severity']
+        read_only_fields = ['game_event']
+
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        message = validated_data.pop('message')
+        severity = validated_data.pop('severity')
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+            game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"ErrorEvent serializer not valid")
+
+        business_event = ErrorEvent.objects.create(
+            game_event=game_event.id,
+            message=message,
+            severity=severity
+        )
+        return business_event
 
 
-class ProgeressionEventSerializer(GameEventSerializer):
+class ProgeressionEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
+    
     class Meta(GameEventSerializer.Meta):
         model = ProgeressionEvent
-        fields = GameEventSerializer.Meta.fields + ['progressionStatus', 'progression01', 'progression02', 'progression03', 'value']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['progressionStatus', 'progression01','progression02', 'progression03', 'value']
+        read_only_fields = ['game_event']                                                                       
+                                                                                
+
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        progressionStatus = validated_data.pop('progressionStatus')
+        progression01 = validated_data.pop('progression01')
+        progression02 = validated_data.pop('progression02')
+        progression03 = validated_data.pop('progression03')
+        value = validated_data.pop('value')
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+            game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"ProgeressionEvent serializer not valid")
+
+        business_event = ProgeressionEvent.objects.create(
+            game_event=game_event.id,
+            progressionStatus=progressionStatus,
+            progression01=progression01,
+            progression02=progression02,
+            progression03=progression03,
+            value=value
+        )
+        return business_event
 
 
-class QualityEventSerializer(GameEventSerializer):
+class QualityEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
+    
     class Meta(GameEventSerializer.Meta):
         model = QualityEvent
-        fields = GameEventSerializer.Meta.fields + ['FPS', 'memoryUsage']
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['FPS', 'memoryUsage']
+        read_only_fields = ['game_event']
+        
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        FPS = validated_data.pop('FPS')
+        memoryUsage = validated_data.pop('memoryUsage')
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+            game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"QualityEvent serializer not valid")
+
+        business_event = QualityEvent.objects.create(
+            game_event=game_event.id,
+            FPS=FPS,
+            memoryUsage=memoryUsage
+        )
+        return business_event
 
 
-class ResourceEventSerializer(GameEventSerializer):
+class ResourceEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
+    
     class Meta(GameEventSerializer.Meta):
         model = ResourceEvent
         fields = GameEventSerializer.Meta.fields + ['flowType', 'itemType', 'itemId', 'amount', 'resourceCurrency']
+        read_only_fields = ['game_event']
 
 class SessionEndEventSerializer(serializers.ModelSerializer):
     client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
