@@ -185,7 +185,7 @@ class AverageFPS(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'averageFPS'
+        db_table = 'averagefps'
 
 class AverageMemoryUsage(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -252,7 +252,7 @@ class NetResourceFlow(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'netResourceFlow'
+        db_table = 'netresourceflow'
 
 class ResourceSinkRatio(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -271,7 +271,7 @@ class CrashRate(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'crashRate'
+        db_table = 'crashrate'
 
 
 class TopErrorTypes(models.Model):
