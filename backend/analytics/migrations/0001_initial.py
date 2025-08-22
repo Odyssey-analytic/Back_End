@@ -150,4 +150,60 @@ class Migration(migrations.Migration):
                 ('game_event', models.IntegerField()),
             ],
         ),
+        migrations.CreateModel(
+            name='BussinessEvent',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('game_event', models.IntegerField()),
+                ('cartType', models.CharField(max_length=300)),
+                ('itemType', models.CharField(max_length=300)),
+                ('itemId', models.CharField(max_length=300)),
+                ('amount', models.IntegerField()),
+                ('currency', models.CharField(max_length=300)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ErrorEvent',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('game_event', models.IntegerField()),
+                ('message', models.TextField()),
+                ('severity', models.CharField(choices=[('Info', 'Info'), ('Debug', 'Debug'), ('Warning', 'Warning'), ('Error', 'Error'), ('Critical', 'Critical')], max_length=10)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ProgeressionEvent',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('game_event', models.IntegerField()),
+                ('progressionStatus', models.CharField(max_length=300)),
+                ('progression01', models.CharField(max_length=300)),
+                ('progression02', models.CharField(max_length=300)),
+                ('progression03', models.CharField(max_length=300)),
+                ('value', models.FloatField()),
+            ],
+        ),
+        migrations.CreateModel(
+            name='QualityEvent',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('game_event', models.IntegerField()),
+                ('FPS', models.FloatField()),
+                ('memoryUsage', models.FloatField()),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ResourceEvent',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('game_event', models.IntegerField()),
+                ('flowType', models.CharField(max_length=300)),
+                ('itemType', models.CharField(max_length=300)),
+                ('itemId', models.CharField(max_length=300)),
+                ('amount', models.IntegerField()),
+                ('resourceCurrency', models.CharField(max_length=300)),
+            ],
+        ),
+        
+        
     ]

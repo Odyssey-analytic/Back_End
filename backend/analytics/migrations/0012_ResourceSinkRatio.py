@@ -12,16 +12,16 @@ WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('1 hour', time) AS bucket,
     product_id,
-    itemType, 
-    SUM(CASE WHEN flowType = 'Sink' THEN amount ELSE 0 END)::float /
+    re."itemType", 
+    SUM(CASE WHEN re."flowType" = 'Sink' THEN amount ELSE 0 END)::float /
     SUM(amount) AS sink_ratio
     FROM gameevent ge
-    JOIN ResourceEvent re 
-    ON ge_id = re_game_event
-    GROUP BY product_id, bucket, itemType;
+    JOIN analytics_resourceevent re 
+    ON ge.id = re.game_event
+    GROUP BY product_id, bucket, re."itemType";
 """
 resourceSinkRatio_refresh_policy = """
-SELECT add_continuous_aggregate_policy('resourceSinkRatio,
+SELECT add_continuous_aggregate_policy('resourceSinkRatio',
     start_offset => INTERVAL '7 days',
     end_offset => INTERVAL '1 hour',
     schedule_interval => INTERVAL '15 minutes');

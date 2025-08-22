@@ -12,10 +12,10 @@ WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('1 hour', time) AS bucket,
     product_id, 
-    AVG(memoryUsage) AS average_memory_usage
+    AVG(qe."memoryUsage") AS average_memory_usage
     FROM gameevent ge
-    JOIN qualityevent qe 
-    ON ge_id = qe_game_event
+    JOIN analytics_qualityevent qe 
+    ON ge.id = qe.game_event
     GROUP BY product_id, bucket;
 """
 averageMemoryUsage_refresh_policy = """

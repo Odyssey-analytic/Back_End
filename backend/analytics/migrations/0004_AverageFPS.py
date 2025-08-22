@@ -12,10 +12,10 @@ WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('1 hour', time) AS bucket,
     product_id, 
-    AVG(FPS) AS average_FPS
+    AVG(qe."FPS") AS average_FPS
     FROM gameevent ge
-    JOIN qualityevent qe 
-    ON ge_id = qe_game_event
+    JOIN analytics_qualityevent qe 
+    ON ge.id = qe.game_event
     GROUP BY product_id, bucket;
 """
 averageFPS_refresh_policy = """

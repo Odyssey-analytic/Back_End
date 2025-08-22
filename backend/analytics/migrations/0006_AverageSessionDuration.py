@@ -12,11 +12,11 @@ WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('1 hour', time) AS bucket,
     product_id, 
-    AVG(duration) AS average_session_duration
+    AVG(s."duration") AS average_session_duration
     FROM gameevent ge
-    JOIN session s 
-    ON ge_session = s_id
-    WHERE duration IS NOT NULL
+    JOIN analytics_session s 
+    ON ge.session_id = s.id
+    WHERE s."duration" IS NOT NULL
     GROUP BY product_id, bucket;
 """
 averageSessionDuration_refresh_policy = """

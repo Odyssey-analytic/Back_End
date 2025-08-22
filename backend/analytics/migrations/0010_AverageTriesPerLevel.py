@@ -13,11 +13,11 @@ SELECT
     time_bucket('1 hour', time) AS bucket,
     product_id,
     progression01, 
-    COUNT(*) FILTER (WHERE progressionStatus = 'Fail')::float /
-    COUNT(DISTINCT client) AS avg_tries
+    COUNT(*) FILTER (WHERE pe."progressionStatus" = 'Fail')::float /
+    COUNT(DISTINCT client_id) AS avg_tries
     FROM gameevent ge
-    JOIN ProgeressionEvent pe 
-    ON ge_id = pe_game_event
+    JOIN analytics_progeressionevent pe 
+    ON ge.id = pe.game_event
     GROUP BY product_id, bucket, progression01;
 """
 averageTriesPerLevel_refresh_policy = """

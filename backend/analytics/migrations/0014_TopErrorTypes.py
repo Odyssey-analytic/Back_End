@@ -15,14 +15,13 @@ SELECT
     message,
     COUNT(*) AS occurrences
     FROM gameevent ge
-    JOIN ErrorEvent ee 
-    ON ge_id = ee_game_event
+    JOIN analytics_errorevent ee 
+    ON ge.id = ee.game_event
     GROUP BY product_id, bucket, message
     ORDER BY occurrences DESC
-    LIMIT 10;
 """
 topErrorTypes_refresh_policy = """
-SELECT add_continuous_aggregate_policy('topErrorTypes,
+SELECT add_continuous_aggregate_policy('topErrorTypes',
     start_offset => INTERVAL '7 days',
     end_offset => INTERVAL '1 hour',
     schedule_interval => INTERVAL '15 minutes');

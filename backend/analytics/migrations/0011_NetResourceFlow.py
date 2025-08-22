@@ -12,12 +12,12 @@ WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('1 hour', time) AS bucket,
     product_id,
-    itemType, 
-    SUM(CASE WHEN flowType = 'Source' THEN amount ELSE -amount END) AS net_flow
+    re."itemType", 
+    SUM(CASE WHEN re."flowType" = 'Source' THEN amount ELSE -amount END) AS net_flow
     FROM gameevent ge
-    JOIN ResourceEvent re 
-    ON ge_id = re_game_event
-    GROUP BY product_id, bucket, itemType;
+    JOIN analytics_resourceevent re 
+    ON ge.id = re.game_event
+    GROUP BY product_id, bucket, re."itemType";
 """
 netResourceFlow_refresh_policy = """
 SELECT add_continuous_aggregate_policy('netResourceFlow',

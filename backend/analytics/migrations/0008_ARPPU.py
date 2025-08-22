@@ -12,10 +12,10 @@ WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('1 hour', time) AS bucket,
     product_id, 
-    SUM(amount)::float / COUNT(DISTINCT client) AS arppu
+    SUM(amount)::float / COUNT(DISTINCT client_id) AS arppu
     FROM gameevent ge
-    JOIN BussinessEvent be 
-    ON ge_id = be_game_event
+    JOIN analytics_bussinessevent be 
+    ON ge.id = be.game_event
     GROUP BY product_id, bucket;
 """
 aRPPU_refresh_policy = """
