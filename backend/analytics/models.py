@@ -113,6 +113,7 @@ class SessionStartEvent(models.Model):
 
 
 class BussinessEvent(models.Model):
+    game_event = models.IntegerField()
     cartType = models.CharField(max_length=max_name_length)
     itemType = models.CharField(max_length=max_name_length)
     itemId = models.CharField(max_length=max_name_length)
@@ -167,3 +168,118 @@ class GameEventHourlyCount(models.Model):
     class Meta:
         managed = False
         db_table = 'gameeventcount_hourly'
+
+class DailyActiveUsers(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    active_users = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'dailyActiveUsers'
+
+class AverageFPS(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    average_FPS = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'averageFPS'
+
+class AverageMemoryUsage(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    average_memory_usage = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'averageMemoryUsage'
+
+class AverageSessionDuration(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    average_session_duration = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'averageSessionDuration'
+
+class TotalRevenuePerCurrency(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    currency  = models.CharField(max_length=max_name_length)
+    total_amount = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'totalRevenuePerCurrency'
+
+class ARPPU(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    arppu = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'aRPPU'
+
+class LevelCompletionRate(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    progression01 = models.CharField(max_length=max_name_length)
+    completion_rate = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'levelCompletionRate'
+
+class AverageTriesPerLevel(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    progression01 = models.CharField(max_length=max_name_length)
+    avg_tries = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'averageTriesPerLevel'
+
+class NetResourceFlow(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    itemType = models.CharField(max_length=max_name_length)
+    net_flow = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'netResourceFlow'
+
+class ResourceSinkRatio(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    itemType = models.CharField(max_length=max_name_length)
+    sink_ratio = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'resourceSinkRatio'
+
+class CrashRate(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    crash_rate = models.FloatField()
+
+    class Meta:
+        managed = False
+        db_table = 'crashRate'
+
+
+class TopErrorTypes(models.Model):
+    bucket = models.DateTimeField(primary_key=True)
+    product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
+    message = models.TextField()
+    occurrences = models.IntegerField()
+
+    class Meta:
+        managed = False
+        db_table = 'topErrorTypes'
