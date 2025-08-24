@@ -176,12 +176,12 @@ class DailyActiveUsers(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'dailyActiveUsers'
+        db_table = 'dailactiveusers'
 
 class AverageFPS(models.Model):
     bucket = models.DateTimeField(primary_key=True)
     product = models.ForeignKey('Product', db_column='product_id', on_delete=models.DO_NOTHING)
-    average_FPS = models.FloatField()
+    average_fps = models.FloatField()
 
     class Meta:
         managed = False
@@ -194,7 +194,7 @@ class AverageMemoryUsage(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'averageMemoryUsage'
+        db_table = 'averagememoryusage'
 
 class AverageSessionDuration(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -203,7 +203,7 @@ class AverageSessionDuration(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'averageSessionDuration'
+        db_table = 'averagesessionduration'
 
 class TotalRevenuePerCurrency(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -213,7 +213,7 @@ class TotalRevenuePerCurrency(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'totalRevenuePerCurrency'
+        db_table = 'totalrevenuepercurrency'
 
 class ARPPU(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -222,7 +222,7 @@ class ARPPU(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'aRPPU'
+        db_table = 'arppu'
 
 class LevelCompletionRate(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -232,7 +232,7 @@ class LevelCompletionRate(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'levelCompletionRate'
+        db_table = 'levelcompletionrate'
 
 class AverageTriesPerLevel(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -242,7 +242,7 @@ class AverageTriesPerLevel(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'averageTriesPerLevel'
+        db_table = 'averagetriesperlevel'
 
 class NetResourceFlow(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -262,7 +262,7 @@ class ResourceSinkRatio(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'resourceSinkRatio'
+        db_table = 'resourcesinkratio'
 
 class CrashRate(models.Model):
     bucket = models.DateTimeField(primary_key=True)
@@ -282,4 +282,4 @@ class TopErrorTypes(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'topErrorTypes'
+        db_table = 'toperrortypes'

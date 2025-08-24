@@ -106,77 +106,6 @@ class KPI_Monitor(AsyncHttpConsumer):
         await self.send_body(f"data: {message}\n\n".encode(), more_body=True)
 
 
-class AverageSessionLength_Monitor(AsyncHttpConsumer):
-    async def handle(self, body):
-        await self.send_headers(headers=[
-            (b"Cache-Control", b"no-cache"),
-            (b"Content-Type", b"text/event-stream"),
-            (b"Transfer-Encoding", b"chunked"),
-            (b'Access-Control-Allow-Origin', b'http://localhost:5173'),
-            (b'Access-Control-Allow-Credentials', b'true')
-        ])
-
-        query = parse_qs(self.scope["query_string"].decode())
-        token_value = query.get("token", [None])[0]
-        kpi = query.get("kpi", [None])[0]
-
-        if not token_value or not kpi:
-            await self.send_body(b"data: Invalid request\n\n", more_body=False)
-            return
-
-        token_obj = await sync_to_async(Token.objects.get)(value=token_value)
-
-        try:
-            payload = await get_running_avg_sessions(token_obj)
-            await self.send_sse_message({"text": json.dumps(payload)})
-            print(payload)
-
-            bucket_seconds = 30
-            bucket = timedelta(seconds=bucket_seconds)
-
-            sessions = await sync_to_async(list)(Session.objects.filter(end_time__isnull=False, token=token_obj).order_by('end_time'))
-            if not sessions:
-                await self.send_sse_message({"text": json.dumps({"error": "the token dosent have any sessions"})})
-                return
-
-            cumulative_duration = timedelta()
-            count = 0
-            session_index = 0
-            current_time = sessions[0].start_time
-            end_time = sessions[-1].end_time
-
-            while True:
-                sessions = await sync_to_async(list)(Session.objects.filter(end_time__isnull=False, token=token_obj).order_by('end_time'))
-
-                end_time = sessions[-1].end_time
-
-                while session_index < len(sessions) and sessions[session_index].end_time <= current_time:
-                    session = sessions[session_index]
-                    cumulative_duration += session.duration
-                    count += 1
-                    session_index += 1
-
-                avg_duration = cumulative_duration.total_seconds() / count if count else 0
-                update_payload = {
-                    "timestamp": current_time.isoformat(),
-                    "value": avg_duration
-                }
-
-                await self.send_sse_message({"text": json.dumps(update_payload)})
-                print("Update sent:", update_payload)
-
-                current_time += bucket
-
-        except asyncio.CancelledError:
-            await self.channel_layer.group_discard("sse_group", self.channel_name)
-        except Exception as e:
-            print(e)
-
-    async def send_sse_message(self, event):
-        message = event["text"]
-        await self.send_body(f"data: {message}\n\n".encode(), more_body=True)
-
-
 class GameEventSSEConsumer(AsyncHttpConsumer):
     async def handle(self, body):
         query_string = self.scope.get('query_string', b'').decode()
@@ -338,7 +267,12 @@ class DailyActiveUsersConsumer(AsyncHttpConsumer):
             return dt
 
         start_dt = parse_dt(start_time)
-        end_dt = parse_dt(end_time)
+        if  not start_dt :
+            end_dt=None
+        else:
+            end_dt=start_dt+timedelta(days=1)
+        print(start_dt)
+        print(end_dt)
 
         if start_dt is None:
             min_bucket = await sync_to_async(
@@ -392,7 +326,7 @@ class DailyActiveUsersConsumer(AsyncHttpConsumer):
             initial_data.append({
                 "bucket": event.bucket.isoformat(),
                 "product_id": event.product_id,
-                "active_users": event.active_users,
+                "event_count": event.active_users,
             })
 
         try:
@@ -426,7 +360,7 @@ class DailyActiveUsersConsumer(AsyncHttpConsumer):
                         await send_sse({
                             "bucket": first_event.bucket.isoformat(),
                             "product_id": first_event.product_id,
-                            "active_users": first_event.active_users,
+                            "event_count": first_event.active_users,
                         })
                     except Exception:
                         return  # Client disconnected
@@ -442,7 +376,7 @@ class DailyActiveUsersConsumer(AsyncHttpConsumer):
                     await send_sse({
                         "bucket": event.bucket.isoformat(),
                         "product_id": event.product_id,
-                        "active_users": event.active_users,
+                        "event_count": event.active_users,
                     })
                 except Exception:
                     return  # Client disconnected
@@ -475,7 +409,12 @@ class AverageFPSConsumer(AsyncHttpConsumer):
             return dt
 
         start_dt = parse_dt(start_time)
-        end_dt = parse_dt(end_time)
+        if  not start_dt :
+            end_dt=None
+        else:
+            end_dt=start_dt+timedelta(days=1)
+        print(start_dt)
+        print(end_dt)
 
         if start_dt is None:
             min_bucket = await sync_to_async(
@@ -529,8 +468,10 @@ class AverageFPSConsumer(AsyncHttpConsumer):
             initial_data.append({
                 "bucket": event.bucket.isoformat(),
                 "product_id": event.product_id,
-                "average_FPS": event.average_FPS,
+                "event_count": event.average_fps,
             })
+            
+        print(len(initial_data))
 
         try:
             await send_sse(initial_data)
@@ -557,17 +498,17 @@ class AverageFPSConsumer(AsyncHttpConsumer):
             # If the first event is the last bucket again, check if it was updated
             first_event = new_events[0]
             if first_event.bucket == last_sent_time:
-                if first_event.average_FPS != last_sent_event_count:
+                if first_event.average_fps != last_sent_event_count:
                     # Re-send updated last row
                     try:
                         await send_sse({
                             "bucket": first_event.bucket.isoformat(),
                             "product_id": first_event.product_id,
-                            "average_FPS": first_event.average_FPS,
+                            "event_count": first_event.average_fps,
                         })
                     except Exception:
                         return  # Client disconnected
-                    last_sent_event_count = first_event.average_FPS
+                    last_sent_event_count = first_event.average_fps
 
                 # Skip to the rest of the new events (if any)
                 remaining_events = new_events[1:]
@@ -579,14 +520,14 @@ class AverageFPSConsumer(AsyncHttpConsumer):
                     await send_sse({
                         "bucket": event.bucket.isoformat(),
                         "product_id": event.product_id,
-                        "average_FPS": event.average_FPS,
+                        "event_count": event.average_fps,
                     })
                 except Exception:
                     return  # Client disconnected
 
                 # Update tracker with latest
                 last_sent_time = event.bucket
-                last_sent_event_count = event.average_FPS
+                last_sent_event_count = event.average_fps
 
 class AverageMemoryUsageConsumer(AsyncHttpConsumer):
     async def handle(self, body):
@@ -612,7 +553,12 @@ class AverageMemoryUsageConsumer(AsyncHttpConsumer):
             return dt
 
         start_dt = parse_dt(start_time)
-        end_dt = parse_dt(end_time)
+        if  not start_dt :
+            end_dt=None
+        else:
+            end_dt=start_dt+timedelta(days=1)
+        print(start_dt)
+        print(end_dt)
 
         if start_dt is None:
             min_bucket = await sync_to_async(
@@ -666,7 +612,7 @@ class AverageMemoryUsageConsumer(AsyncHttpConsumer):
             initial_data.append({
                 "bucket": event.bucket.isoformat(),
                 "product_id": event.product_id,
-                "average_memory_usage": event.average_memory_usage,
+                "event_count": event.average_memory_usage,
             })
 
         try:
@@ -700,7 +646,7 @@ class AverageMemoryUsageConsumer(AsyncHttpConsumer):
                         await send_sse({
                             "bucket": first_event.bucket.isoformat(),
                             "product_id": first_event.product_id,
-                            "average_memory_usage": first_event.average_memory_usage,
+                            "event_count": first_event.average_memory_usage,
                         })
                     except Exception:
                         return  # Client disconnected
@@ -716,7 +662,7 @@ class AverageMemoryUsageConsumer(AsyncHttpConsumer):
                     await send_sse({
                         "bucket": event.bucket.isoformat(),
                         "product_id": event.product_id,
-                        "average_memory_usage": event.average_memory_usage,
+                        "event_count": event.average_memory_usage,
                     })
                 except Exception:
                     return  # Client disconnected
@@ -750,7 +696,12 @@ class AverageSessionDurationConsumer(AsyncHttpConsumer):
             return dt
 
         start_dt = parse_dt(start_time)
-        end_dt = parse_dt(end_time)
+        if  not start_dt :
+            end_dt=None
+        else:
+            end_dt=start_dt+timedelta(days=1)
+        print(start_dt)
+        print(end_dt)
 
         if start_dt is None:
             min_bucket = await sync_to_async(
@@ -804,7 +755,7 @@ class AverageSessionDurationConsumer(AsyncHttpConsumer):
             initial_data.append({
                 "bucket": event.bucket.isoformat(),
                 "product_id": event.product_id,
-                "average_session_duration": event.average_session_duration,
+                "event_count": event.average_session_duration,
             })
 
         try:
@@ -836,7 +787,12 @@ class TotalRevenuePerCurrencyConsumer(AsyncHttpConsumer):
             return dt
 
         start_dt = parse_dt(start_time)
-        end_dt = parse_dt(end_time)
+        if  not start_dt :
+            end_dt=None
+        else:
+            end_dt=start_dt+timedelta(days=1)
+        print(start_dt)
+        print(end_dt)
 
         if start_dt is None:
             min_bucket = await sync_to_async(
@@ -891,7 +847,7 @@ class TotalRevenuePerCurrencyConsumer(AsyncHttpConsumer):
                 "bucket": event.bucket.isoformat(),
                 "product_id": event.product_id,
                 "currency": event.currency,
-                "total_amount": event.total_amount,
+                "event_count": event.total_amount,
             })
 
         try:
@@ -917,14 +873,19 @@ class ARPPUConsumer(AsyncHttpConsumer):
             if not dt_str:
                 return None
             dt = parse_datetime(dt_str)
+            
 
             if dt and not dt.tzinfo:
                 dt = make_aware(dt)
             return dt
 
         start_dt = parse_dt(start_time)
-        end_dt = parse_dt(end_time)
-
+        if  not start_dt :
+            end_dt=None
+        else:
+            end_dt=start_dt+timedelta(days=1)
+        print(start_dt)
+        print(end_dt)
         if start_dt is None:
             min_bucket = await sync_to_async(
                 lambda: ARPPU.objects.aggregate(Min('bucket'))
@@ -977,7 +938,7 @@ class ARPPUConsumer(AsyncHttpConsumer):
             initial_data.append({
                 "bucket": event.bucket.isoformat(),
                 "product_id": event.product_id,
-                "arppu": event.arppu,
+                "event_count": event.arppu,
             })
 
         try:
@@ -985,7 +946,7 @@ class ARPPUConsumer(AsyncHttpConsumer):
         except Exception:
             return
         
-class LevelCompletionRateConsumer(AsyncHttpConsumer):
+"""class LevelCompletionRateConsumer(AsyncHttpConsumer):
     async def handle(self, body):
         query_string = self.scope.get('query_string', b'').decode()
         params = dict(pair.split('=') for pair in query_string.split('&') if '=' in pair)
@@ -1009,7 +970,12 @@ class LevelCompletionRateConsumer(AsyncHttpConsumer):
             return dt
 
         start_dt = parse_dt(start_time)
-        end_dt = parse_dt(end_time)
+        if  not start_dt :
+            end_dt=None
+        else:
+            end_dt=start_dt+timedelta(days=1)
+        print(start_dt)
+        print(end_dt)
 
         if start_dt is None:
             min_bucket = await sync_to_async(
@@ -1071,7 +1037,8 @@ class LevelCompletionRateConsumer(AsyncHttpConsumer):
             await send_sse(initial_data)
         except Exception:
             return
-        
+"""   
+"""   
 class AverageTriesPerLevelConsumer(AsyncHttpConsumer):
     async def handle(self, body):
         query_string = self.scope.get('query_string', b'').decode()
@@ -1158,7 +1125,8 @@ class AverageTriesPerLevelConsumer(AsyncHttpConsumer):
             await send_sse(initial_data)
         except Exception:
             return
-        
+"""      
+"""
 class NetResourceFlowConsumer(AsyncHttpConsumer):
     async def handle(self, body):
         query_string = self.scope.get('query_string', b'').decode()
@@ -1245,7 +1213,7 @@ class NetResourceFlowConsumer(AsyncHttpConsumer):
             await send_sse(initial_data)
         except Exception:
             return
-        
+"""       
 class CrashRateConsumer(AsyncHttpConsumer):
     async def handle(self, body):
         query_string = self.scope.get('query_string', b'').decode()
@@ -1270,7 +1238,12 @@ class CrashRateConsumer(AsyncHttpConsumer):
             return dt
 
         start_dt = parse_dt(start_time)
-        end_dt = parse_dt(end_time)
+        if  not start_dt :
+            end_dt=None
+        else:
+            end_dt=start_dt+timedelta(days=1)
+        print(start_dt)
+        print(end_dt)
 
         if start_dt is None:
             min_bucket = await sync_to_async(
@@ -1324,14 +1297,14 @@ class CrashRateConsumer(AsyncHttpConsumer):
             initial_data.append({
                 "bucket": event.bucket.isoformat(),
                 "product_id": event.product_id,
-                "crash_ratio": event.crash_ratio,
+                "event_count": event.crash_ratio,
             })
 
         try:
             await send_sse(initial_data)
         except Exception:
             return
-        
+"""       
 class ResourceSinkRatioConsumer(AsyncHttpConsumer):
     async def handle(self, body):
         query_string = self.scope.get('query_string', b'').decode()
@@ -1505,3 +1478,4 @@ class TopErrorTypesConsumer(AsyncHttpConsumer):
             await send_sse(initial_data)
         except Exception:
             return
+"""
