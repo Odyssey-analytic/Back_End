@@ -7,7 +7,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from analytics.services.managers.QueueManager import RabbitAccountManager
 from .models import CustomUser, GameEvent, SessionStartEvent, SessionEndEvent, Session, Product, Client, Game, \
-    BussinessEvent, ErrorEvent, ProgeressionEvent, QualityEvent, ResourceEvent
+    BussinessEvent, ErrorEvent, ProgeressionEvent, QualityEvent, ResourceEvent, CustomEvent
 
 
 class CustomUserSignUpSerializer(serializers.ModelSerializer):
@@ -366,3 +366,49 @@ class SessionEndEventSerializer(serializers.ModelSerializer):
             game_event=game_event.id,
         )
         return session_end_event
+
+class CustomEventSerializer(serializers.ModelSerializer):
+    client = serializers.PrimaryKeyRelatedField(queryset=Client.objects.all(), write_only=True)
+    session = serializers.PrimaryKeyRelatedField(queryset=Session.objects.all(), write_only=True)
+    product = serializers.PrimaryKeyRelatedField(queryset=Product.objects.all(), write_only=True)
+    time = serializers.DateTimeField(write_only=True)
+    
+    class Meta(GameEventSerializer.Meta):
+        model = CustomEvent
+        fields = ['id', 'game_event', 'client', 'session', 'time', 'product'] + ['custom_field1', 'custom_field2', 'custom_field3', 'custom_field4', 'custom_field5', 'float_value']
+        read_only_fields = ['game_event']
+
+    def create(self, validated_data):
+        client = validated_data.pop('client')
+        session = validated_data.pop('session')
+        time = validated_data.pop('time')
+        product = validated_data.pop('product')
+        custom_field1 = validated_data.pop('custom_field1')
+        custom_field2 = validated_data.pop('custom_field2')
+        custom_field3 = validated_data.pop('custom_field3')
+        custom_field4 = validated_data.pop('custom_field4')
+        custom_field5 = validated_data.pop('custom_field5')
+        float_value = validated_data.pop('float_value', None)  # Make it optional
+
+        game_event_serializer = GameEventSerializer(
+            data={
+                'client': client.id,
+                'session': session.id,
+                'time': time,
+                'product': product.id
+            })
+        if game_event_serializer.is_valid():
+            game_event = game_event_serializer.save()
+        else:
+            raise Exception(f"CustomEvent serializer not valid")
+
+        custom_event = CustomEvent.objects.create(
+            game_event=game_event.id,
+            custom_field1=custom_field1,
+            custom_field2=custom_field2,
+            custom_field3=custom_field3,
+            custom_field4=custom_field4,
+            custom_field5=custom_field5,
+            float_value=float_value
+        )
+        return custom_event

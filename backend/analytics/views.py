@@ -4,7 +4,7 @@ from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, NotFound, PermissionDenied
 from .services.managers.UserManager import GenerateToken
 from .services.managers.QueueManager import RabbitAccountManager
-from .models import Token, Queue, CustomUser, Client, Game
+from .models import Token, Queue, CustomUser, Client, Game, CustomEvent, GameEvent
 import json
 import random
 import jwt
@@ -18,6 +18,9 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from django.shortcuts import render
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.models import Sum, Count, Avg, Max, Min, F
+from django.db.models.functions import TruncHour, TruncDay, TruncWeek
+from django.utils.dateparse import parse_datetime
 
 
 # Create your views here.
@@ -237,6 +240,10 @@ class GameView(APIView):
                         {
                             "queue_name": "resource_event",
                             "queue_type": "SINGLE_VALUE"
+                        },
+                        {
+                            "queue_name": "custom_event",
+                            "queue_type": "SINGLE_VALUE"
                         }
                     ]   
                 )
@@ -355,3 +362,112 @@ class TokenView(APIView):
         except Exception as e:
             print(e)
             return Response(f"error: {e}", status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class CustomEventQueryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_trunc_function(self, bucket):
+        if bucket == 'hourly':
+            return TruncHour
+        elif bucket == 'daily':
+            return TruncDay
+        elif bucket == 'weekly':
+            return TruncWeek
+        else:
+            raise ValueError("Invalid bucket type. Must be one of: hourly, daily, weekly")
+
+    def get_aggregate_function(self, aggregate_type):
+        if aggregate_type == 'sum':
+            return Sum('float_value')
+        elif aggregate_type == 'count':
+            return Count('id')
+        elif aggregate_type == 'average':
+            return Avg('float_value')
+        elif aggregate_type == 'max':
+            return Max('float_value')
+        elif aggregate_type == 'min':
+            return Min('float_value')
+        else:
+            raise ValueError("Invalid aggregate type. Must be one of: sum, count, average, max, min")
+
+    def get(self, request):
+        try:
+            custom_field1 = request.query_params.get('custom_field1', '*')
+            custom_field2 = request.query_params.get('custom_field2', '*')
+            custom_field3 = request.query_params.get('custom_field3', '*')
+            custom_field4 = request.query_params.get('custom_field4', '*')
+            custom_field5 = request.query_params.get('custom_field5', '*')
+            aggregate_type = request.query_params.get('aggregate_type')
+            bucket = request.query_params.get('bucket')
+            start_time = parse_datetime(request.query_params.get('starttime'))
+            end_time = parse_datetime(request.query_params.get('endtime'))
+
+            if not all([aggregate_type, bucket, start_time, end_time]):
+                return Response({
+                    'status': 'error',
+                    'message': 'Missing required parameters'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            # Validate that wildcards only appear after non-wildcards
+            fields = [custom_field1, custom_field2, custom_field3, custom_field4, custom_field5]
+            found_wildcard = False
+            for i, field in enumerate(fields):
+                if field == '*':
+                    found_wildcard = True
+                elif found_wildcard:
+                    return Response({
+                        'status': 'error',
+                        'message': 'Invalid field pattern - wildcards must be at the end'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+            query = CustomEvent.objects.filter(
+                game_event__in=GameEvent.objects.filter(
+                    time__gte=start_time,
+                    time__lte=end_time
+                ).values('id')
+            )
+
+            if custom_field1 != '*':
+                query = query.filter(custom_field1=custom_field1)
+            if custom_field2 != '*':
+                query = query.filter(custom_field2=custom_field2)
+            if custom_field3 != '*':
+                query = query.filter(custom_field3=custom_field3)
+            if custom_field4 != '*':
+                query = query.filter(custom_field4=custom_field4)
+            if custom_field5 != '*':
+                query = query.filter(custom_field5=custom_field5)
+
+            trunc_func = self.get_trunc_function(bucket)
+            agg_func = self.get_aggregate_function(aggregate_type)
+
+            results = query.annotate(
+                bucket=trunc_func('game_event__time')
+            ).values(
+                'bucket'
+            ).annotate(
+                value=agg_func
+            ).order_by('bucket')
+
+           
+            response_data = [{
+                'timestamp': bucket['bucket'].isoformat(),
+                'value': bucket['value']
+            } for bucket in results]
+
+            return Response({
+                'status': 'success',
+                'data': response_data
+            }, status=status.HTTP_200_OK)
+
+        except ValueError as e:
+            return Response({
+                'status': 'error',
+                'message': str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({
+                'status': 'error',
+                'message': 'An unexpected error occurred',
+                'detail': str(e)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
