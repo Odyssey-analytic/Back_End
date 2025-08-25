@@ -10,7 +10,7 @@ dailActiveUsers_aggregate_table = """
 CREATE MATERIALIZED VIEW dailActiveUsers
 WITH (timescaledb.continuous) AS 
 SELECT 
-    time_bucket('1 day', time) AS bucket,
+    time_bucket('1 hour', time) AS bucket,
     product_id, 
     count(DISTINCT client_id) AS active_users
     FROM gameevent
@@ -20,7 +20,7 @@ dailActiveUsers_refresh_policy = """
 SELECT add_continuous_aggregate_policy('dailActiveUsers',
     start_offset => INTERVAL '7 days',
     end_offset => INTERVAL '1 hour',
-    schedule_interval => INTERVAL '15 minutes');
+    schedule_interval => INTERVAL '30 seconds');
 """
 
 dailActiveUsers_conditions = """
